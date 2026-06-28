@@ -24,6 +24,36 @@
       "name": "Gate",
       "group": "structures",
       "file": "models/scene/base-gate.glb"
+    },
+    {
+      "id": "arena",
+      "name": "Arena",
+      "group": "structures",
+      "file": "models/scene/arena.glb"
+    },
+    {
+      "id": "storage",
+      "name": "Storage",
+      "group": "structures",
+      "file": "models/scene/storage.glb"
+    },
+    {
+      "id": "upgrades",
+      "name": "Upgrades",
+      "group": "structures",
+      "file": "models/scene/upgrades.glb"
+    },
+    {
+      "id": "workshop",
+      "name": "Workshop",
+      "group": "structures",
+      "file": "models/scene/workshop.glb"
+    },
+    {
+      "id": "warehouse",
+      "name": "Warehouse",
+      "group": "structures",
+      "file": "models/scene/warehouse.glb"
     }
   ]
 }

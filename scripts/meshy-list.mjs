@@ -11,7 +11,8 @@ if (!key) {
   process.exit(1);
 }
 
-const res = await fetch("https://api.meshy.ai/openapi/v2/text-to-3d?page_size=20&sort_by=-created_at", {
+const filter = (process.argv[2] ?? "").toLowerCase(); // optional substring match
+const res = await fetch("https://api.meshy.ai/openapi/v2/text-to-3d?page_size=50&sort_by=-created_at", {
   headers: { Authorization: `Bearer ${key}` },
 });
 if (!res.ok) {
@@ -19,9 +20,11 @@ if (!res.ok) {
   process.exit(1);
 }
 const data = await res.json();
-const tasks = Array.isArray(data) ? data : data.result ?? [];
-console.log(`recent tasks: ${tasks.length}`);
+let tasks = Array.isArray(data) ? data : data.result ?? [];
+if (filter) tasks = tasks.filter((t) => (t.prompt ?? "").toLowerCase().includes(filter));
+console.log(`tasks${filter ? ` matching "${filter}"` : ""}: ${tasks.length}`);
 for (const t of tasks) {
-  const prompt = (t.prompt ?? "").slice(0, 50);
-  console.log(`  ${t.id}  [${t.mode}/${t.status}]  ${prompt}`);
+  const prompt = (t.prompt ?? "").slice(0, 70);
+  const glb = t.model_urls?.glb ? "glb✓" : "—";
+  console.log(`  ${t.id}  [${t.mode}/${t.status}] ${glb}  ${prompt}`);
 }

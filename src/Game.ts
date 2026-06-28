@@ -14,6 +14,8 @@ import { ConveyorShop } from "./systems/ConveyorShop.ts";
 import { EconomySystem } from "./systems/EconomySystem.ts";
 import { UpgradeSystem } from "./systems/UpgradeSystem.ts";
 import { BaseStorage } from "./systems/BaseStorage.ts";
+import { FusionSystem } from "./systems/FusionSystem.ts";
+import { FusionPanel } from "./ui/FusionPanel.ts";
 import { HUD } from "./ui/HUD.ts";
 import { Shop } from "./ui/Shop.ts";
 import { Inventory } from "./ui/Inventory.ts";
@@ -46,6 +48,9 @@ export class Game {
   private economy: EconomySystem;
   private upgrades = new UpgradeSystem();
   private baseStorage: BaseStorage;
+  private fusion: FusionSystem;
+  private fusionPanel: FusionPanel;
+  private fusionLabPos = new THREE.Vector3();
   private hud: HUD;
   private shop: Shop;
   private inventory: Inventory;
@@ -75,10 +80,12 @@ export class Game {
     this.baseStorage = new BaseStorage(this.engine.scene);
     this.capture = new CaptureSystem(this.engine.scene, this.library, this.player, this.engine.bus, this.discovered);
     this.conveyor = new ConveyorShop(this.engine.scene, this.library, this.economy, this.baseStorage, this.engine.bus);
+    this.fusion = new FusionSystem(this.engine.scene, this.library, this.baseStorage, this.economy, this.engine.bus);
     this.audio = new AudioManager(this.state.settings, this.engine.bus);
 
     // restore persisted progress (stored creatures restored after library load)
     this.economy.money = this.state.money;
+    this.economy.geneCells = this.state.geneCells;
     this.upgrades.setLevels(this.state.upgrades);
 
     const ui = document.getElementById("ui")!;
@@ -89,6 +96,8 @@ export class Game {
     });
     this.shopPrompt = new ShopPrompt(ui);
     this.inventory = new Inventory(ui, this.library, this.discovered);
+    this.fusionPanel = new FusionPanel(ui, this.baseStorage, this.fusion, this.economy, () => this.persist());
+    this.fusion.onChange = () => this.persist();
     this.settingsPanel = new Settings(
       ui,
       this.state.settings,
@@ -106,15 +115,19 @@ export class Game {
     const bar = document.createElement("div");
     bar.id = "ui-buttons";
     const inv = iconButton("🐾", "Creaturedex (I)");
+    const lab = iconButton("⚗️", "Splice Lab (L)");
     const set = iconButton("⚙️", "Settings");
     inv.addEventListener("click", () => this.inventory.toggle());
+    lab.addEventListener("click", () => this.fusionPanel.toggle());
     set.addEventListener("click", () => this.settingsPanel.toggle());
-    bar.append(inv, set);
+    bar.append(inv, lab, set);
     ui.appendChild(bar);
     window.addEventListener("keydown", (e) => {
       if (e.code === "KeyI") this.inventory.toggle();
+      if (e.code === "KeyL") this.fusionPanel.toggle();
       if (e.code === "Escape") {
         this.inventory.close();
+        this.fusionPanel.close();
         this.settingsPanel.close();
       }
     });
@@ -133,6 +146,7 @@ export class Game {
     const sceneAssets = new SceneAssets();
     await sceneAssets.load();
     this.world.applyBuildingModels(sceneAssets);
+    this.fusionLabPos.copy(this.world.buildingPosition("fusion") ?? this.fusionLabPos);
 
     await this.baseStorage.restore(this.state.stored, this.library);
 
@@ -187,8 +201,10 @@ export class Game {
 
     if (this.libraryReady) this.capture.update(dt, this.world.zones, level);
 
-    // central avenue conveyor + interactions (buy / creature upgrade)
+    // parade conveyor + splice lab + interactions (buy / upgrade / sell)
     this.conveyor.update(dt, p);
+    this.fusion.update(dt);
+    this.fusionPanel.update();
     this.handleInteraction();
 
     this.tryDeliver();
@@ -204,6 +220,7 @@ export class Game {
     this.hud.update(
       {
         money: this.economy.money,
+        geneCells: this.economy.geneCells,
         incomePerSec: income,
         carried: p.carried.length,
         capacity: p.carryCapacity,
@@ -245,6 +262,16 @@ export class Game {
     const p = this.player.position;
     const pressed = this.engine.input.justPressed("interact");
 
+    // priority 0 — Splice Lab: open the fusion panel when standing by it
+    const dxl = p.x - this.fusionLabPos.x;
+    const dzl = p.z - this.fusionLabPos.z;
+    const r = CONFIG.fusion.interactRadius;
+    if (dxl * dxl + dzl * dzl <= r * r) {
+      this.shopPrompt.update({ html: `⚗️ <b>Splice Lab</b> <kbd>E</kbd> open · 🧬 ${this.economy.geneCells}`, affordable: true });
+      if (pressed) this.fusionPanel.open();
+      return;
+    }
+
     // priority 1 — upgrade (E) or sell (Q) the creature in the cage you're next to
     const creature = this.baseStorage.nearestStored(p.x, p.z, 3);
     if (creature) {
@@ -259,10 +286,12 @@ export class Game {
         affordable: afford,
       });
       if (this.engine.input.justPressed("sell")) {
+        const name = creature.def.name;
         const got = this.baseStorage.sell(creature);
         if (got > 0) {
           this.economy.add(got);
-          this.engine.bus.emit("notify", { text: `Sold ${creature.def.name} for ${got}$`, kind: "info" });
+          this.economy.addGene(CONFIG.fusion.geneOnSell);
+          this.engine.bus.emit("notify", { text: `Sold ${name} for ${got}$ (+🧬${CONFIG.fusion.geneOnSell})`, kind: "info" });
           this.persist();
         }
       } else if (pressed) {
@@ -328,6 +357,7 @@ export class Game {
       }
     }
     if (count > 0) {
+      this.economy.addGene(count * CONFIG.fusion.geneOnCapture);
       this.engine.bus.emit("creature:delivered", { count, value });
       this.persist();
     }
@@ -335,6 +365,7 @@ export class Game {
 
   private persist() {
     this.state.money = this.economy.money;
+    this.state.geneCells = this.economy.geneCells;
     this.state.upgrades = this.upgrades.getLevels();
     this.state.stored = this.baseStorage.serialize();
     this.state.discovered = [...this.discovered];

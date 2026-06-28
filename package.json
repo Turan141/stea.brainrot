@@ -10,6 +10,7 @@
     "generate-creatures": "node scripts/generate-creatures.mjs",
     "generate-assets": "node scripts/generate-assets.mjs",
     "generate-scene": "node scripts/generate-scene.mjs",
+    "import-models": "node scripts/import-models.mjs",
     "compress-glb": "node scripts/compress-glb.mjs"
   },
   "dependencies": {

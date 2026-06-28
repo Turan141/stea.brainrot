@@ -77,8 +77,9 @@ export function comboPrompt(a, b, rarity = "common") {
   const detail = RARITY_DETAIL[rarity] ?? "detailed";
   return (
     `An original absurd meme creature: a ${a} combined with a ${b} into one funny cartoon character, ${detail}. ` +
-    `Visually distinct and original — must NOT resemble a coffee cup, an avocado, a sock or a shark. ` +
-    `Style: colorful, goofy, exaggerated proportions, low poly, cute, collectible, game-ready, under 5000 triangles.`
+    `Cute but BATTLE-READY: a fierce confident expression, a natural weapon (claws, spikes, horns, fangs or armor plating) and a dynamic ready-to-fight pose. ` +
+    `Visually distinct and original. ` +
+    `Style: colorful, goofy, exaggerated proportions, low poly, collectible, game-ready, under 5000 triangles.`
   );
 }
 

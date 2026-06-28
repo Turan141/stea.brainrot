@@ -2,6 +2,7 @@ import type { EventBus } from "../engine/EventBus.ts";
 
 export interface HudState {
   money: number;
+  geneCells: number;
   incomePerSec: number;
   carried: number;
   capacity: number;
@@ -18,6 +19,7 @@ export interface HudState {
  */
 export class HUD {
   private money: HTMLElement;
+  private gene: HTMLElement;
   private income: HTMLElement;
   private carry: HTMLElement;
   private base: HTMLElement;
@@ -30,6 +32,7 @@ export class HUD {
   constructor(root: HTMLElement, bus: EventBus) {
     const top = el("div", "", { id: "hud-top" });
     this.money = chip(top, "💰", "hud-money");
+    this.gene = chip(top, "🧬", "hud-gene");
     this.income = chip(top, "📈", "hud-income");
     this.carry = chip(top, "🎒", "");
     this.base = chip(top, "🏠", "");
@@ -57,6 +60,7 @@ export class HUD {
 
   update(s: HudState, dt: number) {
     this.money.innerHTML = `<span class="lbl">$</span><b>${Math.floor(s.money)}</b>`;
+    this.gene.innerHTML = `<span class="lbl">🧬</span><b>${s.geneCells}</b>`;
     this.income.innerHTML = `<b>+${s.incomePerSec.toFixed(1)}</b><span class="lbl">/s</span>`;
     this.carry.innerHTML = `<b>${s.carried}</b><span class="lbl">/${s.capacity}</span>`;
     this.base.innerHTML = `<b>${s.stored}</b><span class="lbl">/${s.baseCapacity}</span>`;

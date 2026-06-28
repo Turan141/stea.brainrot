@@ -127,6 +127,8 @@ function buildCuratedSpec(entry, usedNames, usedSeeds) {
 }
 
 async function main() {
+  // Always generate WITH textures unless explicitly overridden (refine = preview+texture).
+  if (!process.env.MESHY_MODE) process.env.MESHY_MODE = "refine";
   const curated = process.argv.includes("curated") || process.env.CURATED === "1";
   const count = curated ? CURATED.length : parseInt(process.argv[2] ?? process.env.COUNT ?? "12", 10) || 12;
   const generator = selectGenerator();

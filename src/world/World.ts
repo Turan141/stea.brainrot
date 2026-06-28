@@ -35,6 +35,11 @@ export class World {
     this.blockout.applyModels(assets);
   }
 
+  /** World position of a base building (for proximity interactions). */
+  buildingPosition(id: string): THREE.Vector3 | null {
+    return this.blockout.buildingPosition(id);
+  }
+
   /** Support the player landed on this frame (for moving-platform ride). */
   lastSupport: Box | null = null;
 

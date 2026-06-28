@@ -67,14 +67,48 @@ export class BaseBlockout {
    * Buildings without a model keep their labeled greybox.
    */
   applyModels(assets: AssetSource) {
-    this.swapBuilding("castle", assets.instance("base-hq", 26), Math.PI);
-    this.swapBuilding("fusion", assets.instance("fusion-lab", 13), Math.PI);
+    // building id → scene asset id (drop a matching GLB into models/scene to
+    // auto-swap; missing assets simply keep their greybox placeholder)
+    const MAP: Record<string, string> = {
+      castle: "base-hq",
+      fusion: "fusion-lab",
+      arena: "arena",
+      warehouse: "warehouse",
+      "store-a": "storage",
+      "store-b": "workshop",
+      shop: "shop",
+      upgrades: "upgrades",
+    };
+    for (const [buildingId, assetId] of Object.entries(MAP)) {
+      const entry = this.buildingGroups.get(buildingId);
+      if (!entry) continue;
+      const size = Math.max(entry.def.w, entry.def.d, entry.def.h);
+      this.swapBuilding(buildingId, assets.instance(assetId, size), this.faceCenter(entry.def));
+    }
     const gate = assets.instance("base-gate", 16);
     if (gate) {
       this.gateGroup.clear();
       gate.rotation.y = 0;
       this.gateGroup.add(gate);
     }
+  }
+
+  /** World position of a building (for proximity interactions). */
+  buildingPosition(id: string): THREE.Vector3 | null {
+    const e = this.buildingGroups.get(id);
+    return e ? e.group.position.clone() : null;
+  }
+
+  /**
+   * Yaw that turns a building's front (assumed +Z) toward the plaza center,
+   * snapped to the nearest cardinal so structures sit square to the base.
+   */
+  private faceCenter(def: BuildingDef): number {
+    const dx = CONFIG.base.centerX - def.x;
+    const dz = CONFIG.base.centerZ - def.z;
+    // back/front-row buildings face square along Z; only mid-row sides face X
+    if (Math.abs(dz) > CONFIG.base.halfDepth * 0.4) return dz < 0 ? Math.PI : 0;
+    return dx > 0 ? Math.PI / 2 : -Math.PI / 2;
   }
 
   private swapBuilding(id: string, model: THREE.Object3D | null, rotY: number) {
