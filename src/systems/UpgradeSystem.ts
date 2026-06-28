@@ -12,8 +12,7 @@ export type UpgradeKey =
   | "doubleJump"
   | "magnet"
   | "income"
-  | "capacity"
-  | "baseExpansion";
+  | "capacity";
 
 interface UpgradeDef {
   key: UpgradeKey;
@@ -35,7 +34,6 @@ const DEFS: UpgradeDef[] = [
   { key: "magnet", label: "Magnet", baseCost: 90, costMul: 1.65, maxLevel: 6, effect: (l) => `+${(l * 1.5).toFixed(1)} m` },
   { key: "income", label: "Income ×", baseCost: 110, costMul: 1.8, maxLevel: 10, effect: (l) => `×${(1 + l * 0.2).toFixed(2)}` },
   { key: "capacity", label: "Carry Slots", baseCost: 80, costMul: 1.7, maxLevel: 10, effect: (l) => `${5 + l}` },
-  { key: "baseExpansion", label: "Base Size", baseCost: 150, costMul: 1.75, maxLevel: 10, effect: (l) => `${12 + l * 6}` },
 ];
 
 /**
@@ -45,7 +43,7 @@ const DEFS: UpgradeDef[] = [
 export class UpgradeSystem {
   private levels: Record<UpgradeKey, number> = {
     speed: 0, sprint: 0, jump: 0, carrySpeed: 0, stamina: 0, dash: 0,
-    doubleJump: 0, magnet: 0, income: 0, capacity: 0, baseExpansion: 0,
+    doubleJump: 0, magnet: 0, income: 0, capacity: 0,
   };
 
   static defs = DEFS;
@@ -72,7 +70,7 @@ export class UpgradeSystem {
     return 1 + this.levels.income * 0.2;
   }
   get baseCapacity(): number {
-    return 12 + this.levels.baseExpansion * 6;
+    return CONFIG.base.maxCapacity; // hard cap on stored creatures
   }
   get dashUnlocked(): boolean {
     return this.levels.dash > 0;

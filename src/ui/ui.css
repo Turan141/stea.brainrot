@@ -104,6 +104,14 @@
 .inv-card .rar { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
 .inv-card .inc { font-size: 11px; color: #2ee6a6; }
 .rar-common { color: #9fb4d6; } .rar-rare { color: #4fd17a; } .rar-epic { color: #a970ff; } .rar-legendary { color: #ffc24b; } .rar-mythic { color: #ff5d8f; }
+.inv-card .tags { display: flex; gap: 4px; justify-content: center; flex-wrap: wrap; margin: 4px 0 2px; }
+.inv-card .tag { font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: .03em; padding: 1px 6px; border-radius: 8px; background: rgba(255,255,255,.08); color: #cdd8f0; }
+.tag-food { background: rgba(126,200,80,.18); color: #a6e57a; }
+.tag-tech { background: rgba(79,163,255,.18); color: #8cc4ff; }
+.tag-beast { background: rgba(255,138,60,.18); color: #ffb27a; }
+.tag-object { background: rgba(176,182,196,.18); color: #cfd6e4; }
+.tag-cosmic { background: rgba(176,112,255,.18); color: #c79bff; }
+.tag-role { background: rgba(255,210,75,.16); color: #ffd98a; }
 
 /* Settings */
 .setting-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #1e2740; }
@@ -116,3 +124,20 @@
 
 .hud-money.bump b { animation: bump .3s ease; }
 @keyframes bump { 0%,100% { transform: scale(1); } 40% { transform: scale(1.18); } }
+
+/* ---- Conveyor buy prompt ---- */
+#shop-prompt {
+  position: fixed; left: 50%; bottom: 70px; transform: translateX(-50%);
+  z-index: 12; display: none; align-items: center; gap: 8px;
+  background: rgba(16,22,40,.9); border: 1px solid #3a4a72; border-radius: 12px;
+  padding: 10px 16px; color: #eaf0ff; font: 600 15px/1 system-ui, sans-serif;
+  box-shadow: 0 6px 18px rgba(0,0,0,.4); white-space: nowrap;
+}
+#shop-prompt.show { display: flex; }
+#shop-prompt.cant .price { color: #ff6b6b; }
+#shop-prompt .price { color: #ffd24b; font-weight: 800; }
+#shop-prompt .rar { font-size: 11px; font-weight: 800; text-transform: uppercase; }
+#shop-prompt kbd {
+  background: #2c3a5e; border-radius: 6px; padding: 2px 8px; font-weight: 800;
+  border: 1px solid #4f6196; margin-left: 2px;
+}

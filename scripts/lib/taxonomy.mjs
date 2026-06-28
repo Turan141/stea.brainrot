@@ -62,10 +62,22 @@ export function pickCombo(rng, used) {
   return { a: ITEMS[0], b: ITEMS[1], name: `${base} ${n}` };
 }
 
-/** The agreed meme-creature prompt for AI generation. */
-export function comboPrompt(a, b) {
+// Visual richness scales with rarity — rarer creatures should look more
+// interesting/ornate, not just a plain shape.
+const RARITY_DETAIL = {
+  common: "simple clean shapes",
+  rare: "more detailed with colorful accents and small extra features",
+  epic: "highly detailed and ornate, with glowing energy accents and expressive features",
+  legendary: "extremely detailed and majestic, with a glowing magical aura, intricate ornaments and dynamic pose",
+  mythic: "an ultra-detailed masterpiece, radiant cosmic aura, intricate ornate design, awe-inspiring",
+};
+
+/** The agreed meme-creature prompt for AI generation (detail scales by rarity). */
+export function comboPrompt(a, b, rarity = "common") {
+  const detail = RARITY_DETAIL[rarity] ?? "detailed";
   return (
-    `An original absurd meme creature: a ${a} combined with a ${b} into one funny cartoon character. ` +
+    `An original absurd meme creature: a ${a} combined with a ${b} into one funny cartoon character, ${detail}. ` +
+    `Visually distinct and original — must NOT resemble a coffee cup, an avocado, a sock or a shark. ` +
     `Style: colorful, goofy, exaggerated proportions, low poly, cute, collectible, game-ready, under 5000 triangles.`
   );
 }

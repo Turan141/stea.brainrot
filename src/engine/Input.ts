@@ -1,12 +1,14 @@
 import * as THREE from "three";
 
-export type ActionName = "jump" | "sprint" | "dash";
+export type ActionName = "jump" | "sprint" | "dash" | "interact" | "sell";
 
 const KEY_BINDINGS: Record<string, ActionName> = {
   Space: "jump",
   ShiftLeft: "sprint",
   ShiftRight: "sprint",
   KeyF: "dash",
+  KeyE: "interact",
+  KeyQ: "sell",
 };
 
 /**

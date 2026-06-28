@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { Engine } from "./engine/Engine.ts";
 import { World } from "./world/World.ts";
+import { SceneAssets } from "./world/SceneAssets.ts";
 import { Player } from "./player/Player.ts";
 import { PlayerController } from "./player/PlayerController.ts";
 import { PlayerCamera } from "./player/PlayerCamera.ts";
@@ -9,6 +10,7 @@ import { SaveManager, type SaveState } from "./save/SaveManager.ts";
 import { CreatureLibrary } from "./creatures/CreatureLibrary.ts";
 import { Creature } from "./creatures/Creature.ts";
 import { CaptureSystem } from "./systems/CaptureSystem.ts";
+import { ConveyorShop } from "./systems/ConveyorShop.ts";
 import { EconomySystem } from "./systems/EconomySystem.ts";
 import { UpgradeSystem } from "./systems/UpgradeSystem.ts";
 import { BaseStorage } from "./systems/BaseStorage.ts";
@@ -16,13 +18,17 @@ import { HUD } from "./ui/HUD.ts";
 import { Shop } from "./ui/Shop.ts";
 import { Inventory } from "./ui/Inventory.ts";
 import { Settings } from "./ui/Settings.ts";
+import { ShopPrompt } from "./ui/ShopPrompt.ts";
 import { LoadingScreen } from "./ui/LoadingScreen.ts";
 import { AudioManager } from "./audio/AudioManager.ts";
 import { CONFIG } from "./config.ts";
 
-const BASE_CENTER = new THREE.Vector3(0, 0, 8);
-const BASE_RADIUS = 10;
-const RESPAWN = new THREE.Vector3(0, 0.2, 8);
+const BASE_CENTER = new THREE.Vector3(CONFIG.base.centerX, 0, CONFIG.base.centerZ);
+const RESPAWN = new THREE.Vector3(
+  CONFIG.base.centerX,
+  CONFIG.base.deckTop + 0.4,
+  CONFIG.base.centerZ - CONFIG.base.halfDepth + 6 // near the front of the deck, facing the field
+);
 
 /** Top-level orchestrator: wires engine + gameplay systems and the update order. */
 export class Game {
@@ -35,6 +41,8 @@ export class Game {
   private state: SaveState;
   private library = new CreatureLibrary();
   private capture!: CaptureSystem;
+  private conveyor: ConveyorShop;
+  private shopPrompt: ShopPrompt;
   private economy: EconomySystem;
   private upgrades = new UpgradeSystem();
   private baseStorage: BaseStorage;
@@ -62,9 +70,11 @@ export class Game {
     this.player = new Player(this.engine.scene);
     this.controller = new PlayerController();
     this.camera = new PlayerCamera(this.engine.camera);
+    this.camera.setObstacles(this.world.occluders);
     this.economy = new EconomySystem(this.engine.bus);
     this.baseStorage = new BaseStorage(this.engine.scene);
     this.capture = new CaptureSystem(this.engine.scene, this.library, this.player, this.engine.bus, this.discovered);
+    this.conveyor = new ConveyorShop(this.engine.scene, this.library, this.economy, this.baseStorage, this.engine.bus);
     this.audio = new AudioManager(this.state.settings, this.engine.bus);
 
     // restore persisted progress (stored creatures restored after library load)
@@ -77,6 +87,7 @@ export class Game {
       this.engine.bus.emit("upgrade:purchased", { key, level: this.upgrades.level(key) });
       this.persist();
     });
+    this.shopPrompt = new ShopPrompt(ui);
     this.inventory = new Inventory(ui, this.library, this.discovered);
     this.settingsPanel = new Settings(
       ui,
@@ -116,6 +127,13 @@ export class Game {
 
   async start() {
     await this.library.load();
+
+    // swap blockout placeholders for the generated structure models (HQ, Fusion
+    // Lab, Gate); buildings without a model keep their labeled greybox.
+    const sceneAssets = new SceneAssets();
+    await sceneAssets.load();
+    this.world.applyBuildingModels(sceneAssets);
+
     await this.baseStorage.restore(this.state.stored, this.library);
 
     // swap in the generated character model if one exists (else keep capsule)
@@ -168,6 +186,11 @@ export class Game {
     if (this.world.checkHazard(body.position, body.radius)) this.die();
 
     if (this.libraryReady) this.capture.update(dt, this.world.zones, level);
+
+    // central avenue conveyor + interactions (buy / creature upgrade)
+    this.conveyor.update(dt, p);
+    this.handleInteraction();
+
     this.tryDeliver();
 
     // passive income from the base
@@ -217,6 +240,57 @@ export class Game {
     }
   }
 
+  /** Interact key: upgrade a nearby stored creature first, else buy from the avenue. */
+  private handleInteraction() {
+    const p = this.player.position;
+    const pressed = this.engine.input.justPressed("interact");
+
+    // priority 1 — upgrade (E) or sell (Q) the creature in the cage you're next to
+    const creature = this.baseStorage.nearestStored(p.x, p.z, 3);
+    if (creature) {
+      const cost = creature.upgradeCost;
+      const refund = Math.max(1, Math.round(creature.value * CONFIG.base.sellPriceFactor));
+      const afford = this.economy.money >= cost;
+      this.shopPrompt.update({
+        html:
+          `<b>${creature.def.name}</b> <span class="rar">Lv ${creature.level}</span> — ` +
+          `<span class="price">${cost}$</span> <kbd>E</kbd> upgrade · ` +
+          `<span class="price">+${refund}$</span> <kbd>Q</kbd> sell`,
+        affordable: afford,
+      });
+      if (this.engine.input.justPressed("sell")) {
+        const got = this.baseStorage.sell(creature);
+        if (got > 0) {
+          this.economy.add(got);
+          this.engine.bus.emit("notify", { text: `Sold ${creature.def.name} for ${got}$`, kind: "info" });
+          this.persist();
+        }
+      } else if (pressed) {
+        if (this.economy.spend(cost)) {
+          creature.levelUp();
+          this.persist();
+        } else {
+          this.engine.bus.emit("notify", { text: "Not enough coins", kind: "warn" });
+        }
+      }
+      return;
+    }
+
+    // priority 2 — buy the nearest conveyor offer
+    const offer = this.conveyor.nearestInfo();
+    this.shopPrompt.update(
+      offer
+        ? {
+            html:
+              `<span class="rar rar-${offer.rarity}">${offer.rarity}</span> <b>${offer.name}</b> ` +
+              `— <span class="price">${offer.price}$</span> <kbd>E</kbd> buy`,
+            affordable: offer.affordable,
+          }
+        : null
+    );
+    if (pressed) this.conveyor.tryBuy();
+  }
+
   private die() {
     for (const item of this.player.unloadAll()) {
       this.engine.scene.remove(item.mesh);
@@ -230,11 +304,14 @@ export class Game {
   private tryDeliver() {
     if (!this.player.isCarrying) return;
     const p = this.player.position;
-    const dx = p.x - BASE_CENTER.x;
-    const dz = p.z - BASE_CENTER.z;
-    if (dx * dx + dz * dz > BASE_RADIUS * BASE_RADIUS) return;
+    // deliver anywhere on the home deck
+    if (
+      Math.abs(p.x - BASE_CENTER.x) > CONFIG.base.halfWidth ||
+      Math.abs(p.z - BASE_CENTER.z) > CONFIG.base.halfDepth
+    )
+      return;
     if (this.baseStorage.isFull) {
-      this.engine.bus.emit("notify", { text: "Base is full — upgrade Base Size!", kind: "warn" });
+      this.engine.bus.emit("notify", { text: "All cages full — sell a creature (Q)!", kind: "warn" });
       return;
     }
 
@@ -259,7 +336,7 @@ export class Game {
   private persist() {
     this.state.money = this.economy.money;
     this.state.upgrades = this.upgrades.getLevels();
-    this.state.stored = this.baseStorage.ids();
+    this.state.stored = this.baseStorage.serialize();
     this.state.discovered = [...this.discovered];
     this.save.save(this.state);
   }

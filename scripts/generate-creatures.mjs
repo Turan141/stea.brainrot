@@ -25,7 +25,22 @@ import {
   randIntRange,
   pickCombo,
   comboPrompt,
+  RARITIES,
 } from "./lib/taxonomy.mjs";
+
+// Curated, on-theme creatures (used with the `curated` arg). Each is an
+// original "two objects fused" meme hybrid. Edit freely.
+const CURATED = [
+  { a: "toaster", b: "octopus", rarity: "rare" },
+  { a: "traffic cone", b: "corgi", rarity: "common" },
+  { a: "washing machine", b: "narwhal", rarity: "epic" },
+  { a: "cuckoo clock", b: "axolotl", rarity: "rare" },
+  { a: "fire hydrant", b: "dinosaur", rarity: "legendary" },
+];
+
+function titleCase(s) {
+  return s.replace(/\b\w/g, (c) => c.toUpperCase());
+}
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const OUT_DIR = path.resolve(__dirname, "../public/models/creatures");
@@ -75,12 +90,45 @@ function buildSpec(usedNames, usedSeeds) {
     palette,
     scale: +(0.8 + rng() * 0.7).toFixed(2),
     rotationY: +(rng() * Math.PI * 2).toFixed(3),
-    prompt: comboPrompt(combo.a, combo.b),
+    prompt: comboPrompt(combo.a, combo.b, rarity.key),
+  };
+}
+
+/** Build a spec from a curated {a, b, rarity} entry. */
+function buildCuratedSpec(entry, usedNames, usedSeeds) {
+  let seed;
+  do {
+    seed = Math.floor(Math.random() * 1e9);
+  } while (usedSeeds.has(seed));
+  usedSeeds.add(seed);
+
+  const rng = mulberry32(seed);
+  const rarity = RARITIES.find((r) => r.key === entry.rarity) ?? RARITIES[0];
+  let name = titleCase(`${entry.a} ${entry.b}`);
+  let n = 2;
+  while (usedNames.has(name)) name = `${titleCase(`${entry.a} ${entry.b}`)} ${n++}`;
+  usedNames.add(name);
+
+  return {
+    id: slugify(name, seed),
+    seed,
+    name,
+    archetype: "meme",
+    rarity: rarity.key,
+    income: randIntRange(rarity.income, rng),
+    unlockLevel: rarity.unlock,
+    spawnWeight: rarity.weight,
+    glow: rarity.glow,
+    palette: makePalette("meme", rng),
+    scale: +(0.8 + rng() * 0.7).toFixed(2),
+    rotationY: +(rng() * Math.PI * 2).toFixed(3),
+    prompt: comboPrompt(entry.a, entry.b, rarity.key),
   };
 }
 
 async function main() {
-  const count = parseInt(process.argv[2] ?? process.env.COUNT ?? "12", 10) || 12;
+  const curated = process.argv.includes("curated") || process.env.CURATED === "1";
+  const count = curated ? CURATED.length : parseInt(process.argv[2] ?? process.env.COUNT ?? "12", 10) || 12;
   const generator = selectGenerator();
   const provider = generator.meta?.provider ?? "procedural";
 
@@ -90,11 +138,11 @@ async function main() {
   const usedNames = new Set(manifest.creatures.map((c) => c.name));
   const usedSeeds = new Set(manifest.creatures.map((c) => c.seed));
 
-  console.log(`▶ Generating ${count} creature(s) with provider "${provider}"…`);
+  console.log(`▶ Generating ${count} ${curated ? "curated " : ""}creature(s) with provider "${provider}"…`);
   let added = 0;
 
   for (let i = 0; i < count; i++) {
-    const spec = buildSpec(usedNames, usedSeeds);
+    const spec = curated ? buildCuratedSpec(CURATED[i], usedNames, usedSeeds) : buildSpec(usedNames, usedSeeds);
     try {
       const glb = await generator.buildGLB(spec);
       await fs.writeFile(path.join(OUT_DIR, `${spec.id}.glb`), glb);

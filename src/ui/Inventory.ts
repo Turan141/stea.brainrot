@@ -1,4 +1,5 @@
 import type { CreatureLibrary } from "../creatures/CreatureLibrary.ts";
+import { ELEMENT_LABEL, ROLE_LABEL } from "../creatures/types.ts";
 
 /**
  * Collection panel: every creature in the auto-generated library, shown with
@@ -49,10 +50,13 @@ export class Inventory {
       const card = document.createElement("div");
       card.className = `inv-card ${known ? "" : "locked"}`;
       if (known) {
+        const type = def.element ? ELEMENT_LABEL[def.element] : "";
+        const role = def.role ? ROLE_LABEL[def.role] : "";
         card.innerHTML = `
           <img src="${def.thumb}" alt="" onerror="this.style.visibility='hidden'"/>
           <div class="nm">${def.name}</div>
           <div class="rar rar-${def.rarity}">${def.rarity}</div>
+          <div class="tags"><span class="tag tag-${def.element}">${type}</span><span class="tag tag-role">${role}</span></div>
           <div class="inc">$${def.income}/s</div>`;
       } else {
         card.innerHTML = `

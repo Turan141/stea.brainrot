@@ -7,8 +7,9 @@ const STORAGE_KEY = "stea.brainrot.save";
 export interface SaveState {
   version: number;
   money: number;
+  geneCells: number;
   upgrades: Record<string, number>;
-  stored: string[]; // creature ids placed on the base
+  stored: { id: string; level: number }[]; // creatures on the base (with levels)
   discovered: string[]; // creature ids ever captured (for the dex)
   zones: string[]; // unlocked zone ids
   settings: { sfx: boolean; music: boolean };
@@ -18,7 +19,8 @@ export interface SaveState {
 export function defaultSave(): SaveState {
   return {
     version: SAVE_VERSION,
-    money: 0,
+    money: 120, // starter coins so the avenue is usable immediately
+    geneCells: 6, // CONFIG.fusion.startingGene — enough for a first splice
     upgrades: {},
     stored: [],
     discovered: [],
@@ -82,8 +84,9 @@ export class SaveManager {
     return {
       version: SAVE_VERSION,
       money: numberOr(raw.money, 0),
+      geneCells: numberOr(raw.geneCells, base.geneCells),
       upgrades: typeof raw.upgrades === "object" && raw.upgrades ? raw.upgrades : {},
-      stored: Array.isArray(raw.stored) ? raw.stored.filter((s: unknown) => typeof s === "string") : [],
+      stored: normalizeStored(raw.stored),
       discovered: Array.isArray(raw.discovered) ? raw.discovered.filter((s: unknown) => typeof s === "string") : [],
       zones: Array.isArray(raw.zones) && raw.zones.length ? raw.zones : base.zones,
       settings: {
@@ -97,4 +100,17 @@ export class SaveManager {
 
 function numberOr(v: unknown, fallback: number): number {
   return typeof v === "number" && isFinite(v) ? v : fallback;
+}
+
+/** Accept both the old `string[]` format and the new `{id,level}[]` format. */
+function normalizeStored(raw: unknown): { id: string; level: number }[] {
+  if (!Array.isArray(raw)) return [];
+  const out: { id: string; level: number }[] = [];
+  for (const item of raw) {
+    if (typeof item === "string") out.push({ id: item, level: 1 });
+    else if (item && typeof item === "object" && typeof (item as any).id === "string") {
+      out.push({ id: (item as any).id, level: numberOr((item as any).level, 1) });
+    }
+  }
+  return out;
 }

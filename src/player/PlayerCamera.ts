@@ -8,11 +8,14 @@ import { damp } from "../utils/math.ts";
  * orbits the yaw so courses can be navigated from any angle.
  */
 export class PlayerCamera {
-  private yaw = 0;
-  private targetYaw = 0;
+  // start facing the avenue (-Z) with the camera behind the player (+Z side)
+  private yaw = Math.PI;
+  private targetYaw = Math.PI;
   private focus = new THREE.Vector3();
   private dragging = false;
   private lastX = 0;
+  private obstacles: THREE.Object3D[] = [];
+  private raycaster = new THREE.Raycaster();
 
   constructor(private camera: THREE.PerspectiveCamera) {
     window.addEventListener("pointerdown", this.onDown);
@@ -41,6 +44,11 @@ export class PlayerCamera {
     return this.yaw;
   }
 
+  /** Meshes the camera should pull in front of instead of clipping through. */
+  setObstacles(list: THREE.Object3D[]) {
+    this.obstacles = list;
+  }
+
   update(dt: number, target: THREE.Vector3) {
     this.yaw += (this.targetYaw - this.yaw) * damp(CONFIG.camera.lookLerp, dt);
 
@@ -52,7 +60,23 @@ export class PlayerCamera {
       this.focus.y + CONFIG.camera.height,
       this.focus.z - Math.cos(this.yaw) * dist
     );
-    this.camera.position.lerp(desired, damp(CONFIG.camera.lerp, dt));
+
+    // Pull the camera in if a base structure sits between it and the player,
+    // so buildings never block the view (no clipping into walls/HQ).
+    const origin = new THREE.Vector3(this.focus.x, this.focus.y + 1.2, this.focus.z);
+    const dir = desired.clone().sub(origin);
+    const wanted = dir.length();
+    dir.normalize();
+    let allowed = wanted;
+    if (this.obstacles.length) {
+      this.raycaster.set(origin, dir);
+      this.raycaster.far = wanted;
+      const hits = this.raycaster.intersectObjects(this.obstacles, true);
+      if (hits.length) allowed = Math.max(3, hits[0].distance - 0.6);
+    }
+    const goal = origin.clone().add(dir.multiplyScalar(allowed));
+
+    this.camera.position.lerp(goal, damp(CONFIG.camera.lerp, dt));
     this.camera.lookAt(this.focus.x, this.focus.y + 1.2, this.focus.z);
   }
 }

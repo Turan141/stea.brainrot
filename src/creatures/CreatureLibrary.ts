@@ -1,7 +1,9 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { clone as cloneSkeleton } from "three/examples/jsm/utils/SkeletonUtils.js";
 import { weightedPick } from "../utils/math.ts";
-import { RARITY_COLOR, type CreatureDef, type CreatureManifest, type Rarity } from "./types.ts";
+import { ensureFullDef } from "./stats.ts";
+import { RARITY_COLOR, type CreatureDef, type CreatureManifest, type Element, type Rarity } from "./types.ts";
 
 const MANIFEST_URL = "models/creatures/metadata.json";
 
@@ -18,6 +20,7 @@ export class CreatureLibrary {
   private loader = new GLTFLoader();
   private templates = new Map<string, THREE.Object3D>();
   private loading = new Map<string, Promise<THREE.Object3D>>();
+  private clips = new Map<string, THREE.AnimationClip[]>();
 
   get all(): readonly CreatureDef[] {
     return this.defs;
@@ -32,14 +35,14 @@ export class CreatureLibrary {
       if (res.ok) {
         const manifest = (await res.json()) as CreatureManifest;
         if (Array.isArray(manifest.creatures) && manifest.creatures.length) {
-          this.defs = manifest.creatures;
+          this.defs = manifest.creatures.map(ensureFullDef);
           return;
         }
       }
     } catch {
       /* fall through to procedural fallback */
     }
-    this.defs = this.fallbackDefs();
+    this.defs = this.fallbackDefs().map(ensureFullDef);
   }
 
   /** Definitions unlocked at or below the given zone/progression level. */
@@ -63,10 +66,35 @@ export class CreatureLibrary {
     return this.defs.find((d) => d.id === id);
   }
 
+  /**
+   * Pick a creature of a target element (and rarity if possible) — the result
+   * "skin" of a fusion. Relaxes gracefully: element+rarity → element → any.
+   */
+  pickByElement(element: Element, rarity: Rarity, rng: () => number = Math.random): CreatureDef | null {
+    if (!this.defs.length) return null;
+    const byElem = this.defs.filter((d) => d.element === element);
+    const pool = byElem.length ? byElem : this.defs;
+    const exact = pool.filter((d) => d.rarity === rarity);
+    const chosen = exact.length ? exact : pool;
+    return weightedPick(chosen, (d) => d.spawnWeight, rng);
+  }
+
   /** Instantiate a renderable model for a definition (cloned from a cached template). */
   async createInstance(def: CreatureDef): Promise<THREE.Object3D> {
     const template = await this.getTemplate(def);
-    const inst = template.clone(true);
+    const clips = this.clips.get(def.id);
+
+    let inst: THREE.Object3D;
+    if (clips && clips.length) {
+      // skinned/animated: clone with bone rebinding + per-instance mixer
+      inst = cloneSkeleton(template);
+      const mixer = new THREE.AnimationMixer(inst);
+      const clip = clips.find((c) => /idle|walk/i.test(c.name)) ?? clips[0];
+      mixer.clipAction(clip).play();
+      inst.userData.mixer = mixer;
+    } else {
+      inst = template.clone(true);
+    }
     inst.scale.setScalar(def.scale);
     inst.rotation.y = def.rotationY;
     return inst;
@@ -89,6 +117,7 @@ export class CreatureLibrary {
   private async loadModel(def: CreatureDef): Promise<THREE.Object3D> {
     try {
       const gltf = await this.loader.loadAsync(def.file);
+      if (gltf.animations?.length) this.clips.set(def.id, gltf.animations);
       const normalized = this.normalize(gltf.scene);
       this.applyRarityLook(normalized, def);
       return normalized;
@@ -124,18 +153,27 @@ export class CreatureLibrary {
   /** Give the model shadows + a rarity-tinted emissive glow. */
   private applyRarityLook(root: THREE.Object3D, def: CreatureDef) {
     const glowColor = new THREE.Color(RARITY_COLOR[def.rarity]);
+    const tint = new THREE.Color(def.palette?.[0] ?? "#9fb4d6");
+    let partIndex = 0;
     root.traverse((o) => {
       const mesh = o as THREE.Mesh;
       if (!mesh.isMesh) return;
       mesh.castShadow = true;
       mesh.receiveShadow = true;
       const mat = mesh.material as THREE.MeshStandardMaterial;
-      if (mat && "emissive" in mat) {
-        // vertex colors only exist on the procedural GLBs; AI models use textures
-        if (mesh.geometry.getAttribute("color")) mat.vertexColors = true;
-        mat.emissive = glowColor;
-        mat.emissiveIntensity = def.glow * 0.6;
+      if (!mat || !("emissive" in mat)) return;
+
+      const hasVertexColors = !!mesh.geometry.getAttribute("color");
+      const hasTexture = !!mat.map;
+      if (hasVertexColors) {
+        mat.vertexColors = true;
+      } else if (!hasTexture) {
+        // untextured AI preview model — tint with the palette so it isn't grey
+        mat.color.set(partIndex % 2 === 0 ? tint : new THREE.Color(def.palette?.[1] ?? def.palette?.[0] ?? "#9fb4d6"));
       }
+      mat.emissive = glowColor;
+      mat.emissiveIntensity = def.glow * 0.6;
+      partIndex++;
     });
   }
 

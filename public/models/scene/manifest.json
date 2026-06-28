@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "assets": [
+    {
+      "id": "base-hq",
+      "name": "HQ",
+      "group": "structures",
+      "file": "models/scene/base-hq.glb"
+    },
+    {
+      "id": "fusion-lab",
+      "name": "Fusion Lab",
+      "group": "structures",
+      "file": "models/scene/fusion-lab.glb"
+    },
+    {
+      "id": "pedestal",
+      "name": "Pedestal",
+      "group": "structures",
+      "file": "models/scene/pedestal.glb"
+    },
+    {
+      "id": "base-gate",
+      "name": "Gate",
+      "group": "structures",
+      "file": "models/scene/base-gate.glb"
+    }
+  ]
+}

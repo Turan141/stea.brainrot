@@ -19,7 +19,178 @@
       "file": "models/creatures/avocado-coffee-cup-54704.glb",
       "thumb": "models/creatures/avocado-coffee-cup-54704.svg",
       "seed": 2854704
+    },
+    {
+      "id": "sock-shark",
+      "name": "Sock Shark",
+      "archetype": "meme",
+      "rarity": "epic",
+      "income": 18,
+      "unlockLevel": 3,
+      "spawnWeight": 12,
+      "glow": 0.3,
+      "palette": [
+        "#cfd6e6",
+        "#6f86b8"
+      ],
+      "scale": 1.7,
+      "rotationY": 0,
+      "file": "models/creatures/sock-shark.glb",
+      "thumb": "",
+      "seed": 770001
+    },
+    {
+      "id": "ceiling-fan-robot-53840",
+      "name": "Ceiling Fan Robot",
+      "archetype": "meme",
+      "rarity": "epic",
+      "income": 13,
+      "unlockLevel": 3,
+      "spawnWeight": 14,
+      "glow": 0.3,
+      "palette": [
+        "#d147ce",
+        "#e05b52"
+      ],
+      "scale": 1.36,
+      "rotationY": 5.91,
+      "file": "models/creatures/ceiling-fan-robot-53840.glb",
+      "thumb": "models/creatures/ceiling-fan-robot-53840.svg",
+      "seed": 649553840
+    },
+    {
+      "id": "traffic-cone-duck-43730",
+      "name": "Traffic Cone Duck",
+      "archetype": "meme",
+      "rarity": "rare",
+      "income": 6,
+      "unlockLevel": 2,
+      "spawnWeight": 28,
+      "glow": 0.15,
+      "palette": [
+        "#d1a847",
+        "#65e052"
+      ],
+      "scale": 1.48,
+      "rotationY": 0.059,
+      "file": "models/creatures/traffic-cone-duck-43730.glb",
+      "thumb": "models/creatures/traffic-cone-duck-43730.svg",
+      "seed": 675143730
+    },
+    {
+      "id": "narwhal-crab-14595",
+      "name": "Narwhal Crab",
+      "archetype": "meme",
+      "rarity": "common",
+      "income": 1,
+      "unlockLevel": 1,
+      "spawnWeight": 50,
+      "glow": 0.05,
+      "palette": [
+        "#6ad147",
+        "#52e0d0"
+      ],
+      "scale": 1,
+      "rotationY": 6.219,
+      "file": "models/creatures/narwhal-crab-14595.glb",
+      "thumb": "models/creatures/narwhal-crab-14595.svg",
+      "seed": 991014595
+    },
+    {
+      "id": "toaster-octopus-4064",
+      "name": "Toaster Octopus",
+      "archetype": "meme",
+      "rarity": "rare",
+      "income": 6,
+      "unlockLevel": 2,
+      "spawnWeight": 28,
+      "glow": 0.15,
+      "palette": [
+        "#474cd1",
+        "#b252e0"
+      ],
+      "scale": 0.81,
+      "rotationY": 0.921,
+      "file": "models/creatures/toaster-octopus-4064.glb",
+      "thumb": "models/creatures/toaster-octopus-4064.svg",
+      "seed": 968304064
+    },
+    {
+      "id": "traffic-cone-corgi-8246",
+      "name": "Traffic Cone Corgi",
+      "archetype": "meme",
+      "rarity": "common",
+      "income": 3,
+      "unlockLevel": 1,
+      "spawnWeight": 50,
+      "glow": 0.05,
+      "palette": [
+        "#d1477a",
+        "#e08f52"
+      ],
+      "scale": 1.25,
+      "rotationY": 0.597,
+      "file": "models/creatures/traffic-cone-corgi-8246.glb",
+      "thumb": "models/creatures/traffic-cone-corgi-8246.svg",
+      "seed": 799508246
+    },
+    {
+      "id": "washing-machine-narwhal-22130",
+      "name": "Washing Machine Narwhal",
+      "archetype": "meme",
+      "rarity": "epic",
+      "income": 18,
+      "unlockLevel": 3,
+      "spawnWeight": 14,
+      "glow": 0.3,
+      "palette": [
+        "#47c9d1",
+        "#9752e0"
+      ],
+      "scale": 1.09,
+      "rotationY": 1.113,
+      "file": "models/creatures/washing-machine-narwhal-22130.glb",
+      "thumb": "models/creatures/washing-machine-narwhal-22130.svg",
+      "seed": 746522130
+    },
+    {
+      "id": "cuckoo-clock-axolotl-92632",
+      "name": "Cuckoo Clock Axolotl",
+      "archetype": "meme",
+      "rarity": "rare",
+      "income": 8,
+      "unlockLevel": 2,
+      "spawnWeight": 28,
+      "glow": 0.15,
+      "palette": [
+        "#7ed147",
+        "#52e0a8"
+      ],
+      "scale": 1.25,
+      "rotationY": 2.9,
+      "file": "models/creatures/cuckoo-clock-axolotl-92632.glb",
+      "thumb": "models/creatures/cuckoo-clock-axolotl-92632.svg",
+      "seed": 10592632
+    },
+    {
+      "id": "fire-hydrant-dinosaur-36027",
+      "name": "Fire Hydrant Dinosaur",
+      "archetype": "meme",
+      "rarity": "legendary",
+      "income": 58,
+      "unlockLevel": 4,
+      "spawnWeight": 6,
+      "glow": 0.5,
+      "palette": [
+        "#d1a147",
+        "#52e070"
+      ],
+      "scale": 1.03,
+      "rotationY": 1.088,
+      "file": "models/creatures/fire-hydrant-dinosaur-36027.glb",
+      "thumb": "models/creatures/fire-hydrant-dinosaur-36027.svg",
+      "seed": 573336027
     }
   ],
-  "generatedAt": "2026-06-28T18:43:06.991Z"
+  "generatedAt": "2026-06-28T20:58:40.929Z"
 }
