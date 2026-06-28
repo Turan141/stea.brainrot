@@ -38,7 +38,11 @@ const CHARACTER = {
   id: "player",
   name: "Adventurer",
   palette: ["#4fa3ff", "#ffd24b"],
-  prompt: "a cute original cartoon adventurer character, chunky rounded proportions, big head, game ready, standing T-pose, no weapons",
+  prompt:
+    "A cute stylized low-poly cartoon game character inspired by modern casual multiplayer games. " +
+    "Features: big head, small body, large eyes, short arms and legs, soft rounded shapes, friendly smile, " +
+    "hoodie, sneakers, backpack. Style: colorful, low poly, game-ready, family friendly, under 6000 triangles, " +
+    "A-pose, suitable for Mixamo animations.",
 };
 
 function slug(s) {
@@ -46,7 +50,10 @@ function slug(s) {
 }
 
 async function makeAssets() {
-  const propCount = Math.max(0, parseInt(process.argv[2] ?? "3", 10) || 3);
+  // NB: don't use `|| 3` — that would turn an explicit 0 into 3.
+  const rawCount = process.argv[2];
+  let propCount = rawCount === undefined ? 3 : parseInt(rawCount, 10);
+  if (Number.isNaN(propCount) || propCount < 0) propCount = 3;
   const provider = selectGenerator();
   const providerName = provider.meta?.provider ?? "procedural";
   const isProc = providerName === "procedural";

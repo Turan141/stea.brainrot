@@ -49,8 +49,13 @@ export class CreatureLibrary {
 
   /** Weighted random pick among unlocked creatures. */
   pick(level: number, rng: () => number = Math.random): CreatureDef | null {
-    const pool = this.unlocked(level);
-    if (!pool.length) return null;
+    let pool = this.unlocked(level);
+    if (!pool.length) {
+      // nothing unlocked at this level yet — fall back to the easiest creatures
+      if (!this.defs.length) return null;
+      const minUnlock = Math.min(...this.defs.map((d) => d.unlockLevel));
+      pool = this.defs.filter((d) => d.unlockLevel === minUnlock);
+    }
     return weightedPick(pool, (d) => d.spawnWeight, rng);
   }
 

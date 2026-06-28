@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "creatures": [
+    {
+      "id": "avocado-coffee-cup-54704",
+      "name": "Avocado Coffee Cup",
+      "archetype": "meme",
+      "rarity": "common",
+      "income": 3,
+      "unlockLevel": 1,
+      "spawnWeight": 50,
+      "glow": 0.05,
+      "palette": [
+        "#d16d47",
+        "#52e076"
+      ],
+      "scale": 1.32,
+      "rotationY": 2.651,
+      "file": "models/creatures/avocado-coffee-cup-54704.glb",
+      "thumb": "models/creatures/avocado-coffee-cup-54704.svg",
+      "seed": 2854704
+    }
+  ],
+  "generatedAt": "2026-06-28T18:43:06.991Z"
+}

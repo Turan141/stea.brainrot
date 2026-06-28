@@ -20,11 +20,11 @@ import {
   mulberry32,
 } from "./generators/procedural.mjs";
 import {
-  pickArchetype,
   pickRarity,
-  makeName,
   makePalette,
   randIntRange,
+  pickCombo,
+  comboPrompt,
 } from "./lib/taxonomy.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -55,17 +55,17 @@ function buildSpec(usedNames, usedSeeds) {
   usedSeeds.add(seed);
 
   const rng = mulberry32(seed);
-  const archetype = pickArchetype(rng);
   const rarity = pickRarity(rng);
-  const name = makeName(archetype, rng, usedNames);
-  usedNames.add(name);
+  const combo = pickCombo(rng, usedNames);
+  usedNames.add(combo.name);
+  const archetype = "meme";
   const palette = makePalette(archetype, rng);
   const income = randIntRange(rarity.income, rng);
 
   return {
-    id: slugify(name, seed),
+    id: slugify(combo.name, seed),
     seed,
-    name,
+    name: combo.name,
     archetype,
     rarity: rarity.key,
     income,
@@ -75,7 +75,7 @@ function buildSpec(usedNames, usedSeeds) {
     palette,
     scale: +(0.8 + rng() * 0.7).toFixed(2),
     rotationY: +(rng() * Math.PI * 2).toFixed(3),
-    prompt: `${name}: a cute original cartoon ${archetype}, chunky low-poly, big eyes, vibrant colors, game asset`,
+    prompt: comboPrompt(combo.a, combo.b),
   };
 }
 

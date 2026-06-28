@@ -27,6 +27,49 @@ export const RARITIES = [
 
 const ARCHETYPE_KEYS = Object.keys(ARCHETYPES);
 
+// Pool for "combine two random things" meme creatures.
+export const ITEMS = [
+  // everyday objects
+  "toaster", "umbrella", "alarm clock", "light bulb", "backpack", "teapot",
+  "sneaker", "traffic cone", "vacuum cleaner", "desk lamp", "remote control",
+  // foods
+  "banana", "pizza slice", "watermelon", "donut", "taco", "pickle", "sushi roll",
+  "ice cream cone", "pretzel", "cupcake", "hot dog", "avocado", "coffee cup",
+  // animals
+  "octopus", "duck", "axolotl", "sloth", "narwhal", "frog", "corgi", "pigeon",
+  "crab", "hamster", "shark", "llama", "dinosaur", "astronaut cat",
+  // household
+  "washing machine", "television", "ceiling fan", "mailbox", "fire hydrant",
+  "rubber duck", "garden gnome", "cuckoo clock", "robot",
+];
+
+function titleCase(s) {
+  return s.replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+/** Pick two distinct items and a combined name unique vs `used`. */
+export function pickCombo(rng, used) {
+  for (let i = 0; i < 50; i++) {
+    const a = ITEMS[Math.floor(rng() * ITEMS.length)];
+    const b = ITEMS[Math.floor(rng() * ITEMS.length)];
+    if (a === b) continue;
+    const name = titleCase(`${a} ${b}`);
+    if (!used.has(name)) return { a, b, name };
+  }
+  let n = 2;
+  const base = titleCase(`${ITEMS[0]} ${ITEMS[1]}`);
+  while (used.has(`${base} ${n}`)) n++;
+  return { a: ITEMS[0], b: ITEMS[1], name: `${base} ${n}` };
+}
+
+/** The agreed meme-creature prompt for AI generation. */
+export function comboPrompt(a, b) {
+  return (
+    `An original absurd meme creature: a ${a} combined with a ${b} into one funny cartoon character. ` +
+    `Style: colorful, goofy, exaggerated proportions, low poly, cute, collectible, game-ready, under 5000 triangles.`
+  );
+}
+
 function hslHex(h, s, l) {
   h /= 360;
   const a = s * Math.min(l, 1 - l);
