@@ -7,6 +7,8 @@ import type { CreatureLibrary } from "../creatures/CreatureLibrary.ts";
 interface Cage {
   center: THREE.Vector3;
   occupant: Creature | null;
+  visual: THREE.Object3D; // the pen (procedural group or GLB), shown only when occupied
+  pad: THREE.Mesh; // clean empty-slot marker, shown when the cage is empty
 }
 
 /**
@@ -34,7 +36,6 @@ export class BaseStorage {
   applyModels(assets: { instance(id: string, size: number): THREE.Object3D | null; has(id: string): boolean }) {
     const { deckTop, cageCell } = CONFIG.base;
     if (assets.has("base-cage")) {
-      this.cageGroup.clear();
       for (const cage of this.cages) {
         const m = assets.instance("base-cage", cageCell - 2.2); // ~4.8u, leaves walkable gaps
         if (!m) break;
@@ -43,7 +44,10 @@ export class BaseStorage {
           const mesh = o as THREE.Mesh;
           if (mesh.isMesh) mesh.castShadow = mesh.receiveShadow = true;
         });
+        this.cageGroup.remove(cage.visual);
+        cage.visual = m;
         this.cageGroup.add(m);
+        this.refreshCage(cage); // empty pens stay hidden so empty cells read clean
       }
     }
     if (assets.has("base-fountain")) {
@@ -78,25 +82,26 @@ export class BaseStorage {
           for (let c = 0; c < quadCols; c++) {
             const x = centerX + sx * (x0 + c * cageCell);
             const z = centerZ + sz * (z0 + r * cageCell);
-            this.buildCage(x, z, deckTop);
-            this.cages.push({ center: new THREE.Vector3(x, deckTop + 0.4, z), occupant: null });
+            this.cages.push(this.buildCage(x, z, deckTop));
           }
         }
       }
     }
   }
 
-  /** One fenced pen: floor pad + corner posts + top rails. */
-  private buildCage(x: number, z: number, deckTop: number) {
+  /** One fenced pen (floor pad + corner posts + top rails) plus a clean empty-slot pad. */
+  private buildCage(x: number, z: number, deckTop: number): Cage {
     const penSize = CONFIG.base.cageCell - 1.8;
     const half = penSize / 2;
     const floorMat = new THREE.MeshStandardMaterial({ color: 0x8a6f47, roughness: 0.85 });
     const postMat = new THREE.MeshStandardMaterial({ color: 0x8893ad, roughness: 0.6, metalness: 0.1 });
 
+    const pen = new THREE.Group();
+
     const floor = new THREE.Mesh(new THREE.BoxGeometry(penSize, 0.08, penSize), floorMat);
     floor.position.set(x, deckTop + 0.05, z);
     floor.receiveShadow = true;
-    this.cageGroup.add(floor);
+    pen.add(floor);
 
     const H = 2.2;
     for (const sx of [-1, 1]) {
@@ -104,7 +109,7 @@ export class BaseStorage {
         const post = new THREE.Mesh(new THREE.BoxGeometry(0.16, H, 0.16), postMat);
         post.position.set(x + sx * half, deckTop + H / 2, z + sz * half);
         post.castShadow = true;
-        this.cageGroup.add(post);
+        pen.add(post);
       }
     }
     for (const [w, d, ox, oz] of [
@@ -115,8 +120,29 @@ export class BaseStorage {
     ] as const) {
       const rail = new THREE.Mesh(new THREE.BoxGeometry(w, 0.1, d), postMat);
       rail.position.set(x + ox, deckTop + H, z + oz);
-      this.cageGroup.add(rail);
+      pen.add(rail);
     }
+    this.cageGroup.add(pen);
+
+    // Clean, subtle disc marking a free slot — replaces the dark empty pen visual.
+    const pad = new THREE.Mesh(
+      new THREE.CylinderGeometry(penSize * 0.46, penSize * 0.46, 0.06, 28),
+      new THREE.MeshStandardMaterial({ color: 0xb9c6d6, roughness: 0.7, emissive: 0x223247, emissiveIntensity: 0.3 })
+    );
+    pad.position.set(x, deckTop + 0.05, z);
+    pad.receiveShadow = true;
+    this.cageGroup.add(pad);
+
+    const cage: Cage = { center: new THREE.Vector3(x, deckTop + 0.4, z), occupant: null, visual: pen, pad };
+    this.refreshCage(cage);
+    return cage;
+  }
+
+  /** Show the pen only when occupied; show the clean pad on empty slots. */
+  private refreshCage(cage: Cage) {
+    const occupied = !!cage.occupant;
+    cage.visual.visible = occupied;
+    cage.pad.visible = !occupied;
   }
 
   /** Plus-shaped stone avenues separating the four cage quadrants. */
@@ -189,6 +215,7 @@ export class BaseStorage {
     creature.setPen(cage.center, CONFIG.base.penHalf);
     this.stored.push(creature);
     creature.showLevelLabel();
+    this.refreshCage(cage);
     return true;
   }
 
@@ -224,6 +251,7 @@ export class BaseStorage {
     const i = this.stored.indexOf(creature);
     if (i >= 0) this.stored.splice(i, 1);
     this.scene.remove(creature.mesh);
+    this.refreshCage(cage);
     return true;
   }
 

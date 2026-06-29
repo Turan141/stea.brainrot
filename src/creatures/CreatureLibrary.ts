@@ -179,6 +179,11 @@ export class CreatureLibrary {
       const mat = mesh.material as THREE.MeshStandardMaterial;
       if (!mat || !("emissive" in mat)) return;
 
+      // Meshy materials are often metallic with no env map → render near-black.
+      // Force matte so textured creatures show their real colors (no black parts).
+      mat.metalness = 0;
+      mat.roughness = Math.max(0.55, mat.roughness ?? 1);
+
       const hasVertexColors = !!mesh.geometry.getAttribute("color");
       const hasTexture = !!mat.map;
       if (hasVertexColors) {
