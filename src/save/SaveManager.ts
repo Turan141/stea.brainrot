@@ -9,10 +9,11 @@ export interface SaveState {
   money: number;
   geneCells: number;
   upgrades: Record<string, number>;
-  stored: { id: string; level: number }[]; // creatures on the base (with levels)
+  stored: { id: string; level: number; clone?: number }[]; // creatures on the base (with levels; clone<1 = Arena clone)
   discovered: string[]; // creature ids ever captured (for the dex)
   zones: string[]; // unlocked zone ids
   settings: { sfx: boolean; music: boolean };
+  tutorialStep: number; // onboarding progress (index into the steps; >= length = done)
   updatedAt: number;
 }
 
@@ -26,6 +27,7 @@ export function defaultSave(): SaveState {
     discovered: [],
     zones: ["zone-1"],
     settings: { sfx: true, music: true },
+    tutorialStep: 0,
     updatedAt: 0,
   };
 }
@@ -93,6 +95,7 @@ export class SaveManager {
         sfx: raw.settings?.sfx ?? true,
         music: raw.settings?.music ?? true,
       },
+      tutorialStep: numberOr(raw.tutorialStep, 0),
       updatedAt: numberOr(raw.updatedAt, 0),
     };
   }
@@ -102,14 +105,15 @@ function numberOr(v: unknown, fallback: number): number {
   return typeof v === "number" && isFinite(v) ? v : fallback;
 }
 
-/** Accept both the old `string[]` format and the new `{id,level}[]` format. */
-function normalizeStored(raw: unknown): { id: string; level: number }[] {
+/** Accept both the old `string[]` format and the new `{id,level,clone?}[]` format. */
+function normalizeStored(raw: unknown): { id: string; level: number; clone?: number }[] {
   if (!Array.isArray(raw)) return [];
-  const out: { id: string; level: number }[] = [];
+  const out: { id: string; level: number; clone?: number }[] = [];
   for (const item of raw) {
     if (typeof item === "string") out.push({ id: item, level: 1 });
     else if (item && typeof item === "object" && typeof (item as any).id === "string") {
-      out.push({ id: (item as any).id, level: numberOr((item as any).level, 1) });
+      const o = item as any;
+      out.push({ id: o.id, level: numberOr(o.level, 1), ...(typeof o.clone === "number" ? { clone: o.clone } : {}) });
     }
   }
   return out;

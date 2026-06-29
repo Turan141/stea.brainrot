@@ -79,6 +79,7 @@ export class TouchControls {
     const defs: { label: string; action: Parameters<Input["setTouchAction"]>[0]; cls: string }[] = [
       { label: "E", action: "interact", cls: "tc-e" },
       { label: "Q", action: "sell", cls: "tc-q" },
+      { label: "⚔️", action: "attack", cls: "tc-attack" },
       { label: "⚡", action: "sprint", cls: "tc-sprint" },
       { label: "»", action: "dash", cls: "tc-dash" },
       { label: "⤒", action: "jump", cls: "tc-jump" },

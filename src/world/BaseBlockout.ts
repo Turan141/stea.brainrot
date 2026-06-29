@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { CONFIG } from "../config.ts";
+import { Box } from "./types.ts";
 
 /**
  * Greybox/blockout of the player base: walls, a road-width gate and labeled
@@ -104,6 +105,20 @@ export class BaseBlockout {
     }
 
     if (assets.has("base-wall")) this.tileWalls(assets);
+  }
+
+  /** Solid XZ collision boxes for the perimeter walls and building footprints. */
+  get colliders(): Box[] {
+    const out: Box[] = [];
+    const T = 0.6; // wall half-thickness
+    for (const r of this.wallRuns) {
+      if (r.horizontal) out.push(new Box(r.cx, 2, r.cz, r.len / 2, 3, T));
+      else out.push(new Box(r.cx, 2, r.cz, T, 3, r.len / 2));
+    }
+    for (const { def } of this.buildingGroups.values()) {
+      out.push(new Box(def.x, 4, def.z, def.w / 2, 6, def.d / 2));
+    }
+    return out;
   }
 
   /** World position of a building (for proximity interactions). */

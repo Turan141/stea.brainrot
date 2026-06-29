@@ -39,6 +39,9 @@ export class Player {
   // The visual sits inside `rig` (a child of mesh), so we can apply a
   // procedural walk (bob / sway / lean) without disturbing the body transform.
   private readonly rig: THREE.Group;
+  private weapon: THREE.Group | null = null;
+  private slash: THREE.Mesh | null = null;
+  private attackTimer = 0;
   private placeholder: THREE.Object3D[] = [];
   private walkPhase = 0;
   private idleT = 0;
@@ -71,7 +74,96 @@ export class Player {
     this.rig.add(nose);
     this.placeholder = [bodyMesh, nose];
 
+    this.buildWeapon();
     scene.add(this.mesh);
+  }
+
+  /**
+   * A held weapon attached to the rig (not a bone — the character GLB is
+   * static), positioned at the right hand. Rides the walk bob/lean for free.
+   */
+  private buildWeapon() {
+    const w = new THREE.Group();
+    const steel = new THREE.MeshStandardMaterial({ color: 0xb9c4d6, roughness: 0.4, metalness: 0.6 });
+    const grip = new THREE.MeshStandardMaterial({ color: 0x5a3d24, roughness: 0.9 });
+    const glow = new THREE.MeshStandardMaterial({ color: 0x9fe8ff, emissive: 0x35c9ff, emissiveIntensity: 1.6, roughness: 0.3 });
+
+    const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, 0.4, 8), grip);
+    handle.position.y = 0.2;
+    w.add(handle);
+    const pommel = new THREE.Mesh(new THREE.SphereGeometry(0.08, 10, 8), steel);
+    w.add(pommel);
+    const guard = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.1, 0.12), steel);
+    guard.position.y = 0.42;
+    w.add(guard);
+    const blade = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.85, 0.05), glow);
+    blade.position.y = 0.88;
+    w.add(blade);
+    const tip = new THREE.Mesh(new THREE.ConeGeometry(0.075, 0.24, 4), glow);
+    tip.position.y = 1.36;
+    w.add(tip);
+
+    w.traverse((o) => {
+      const m = o as THREE.Mesh;
+      if (m.isMesh) m.castShadow = true;
+    });
+    // held at the right hand, blade up and angled slightly outward/forward
+    w.position.set(0.48, 0.66, 0.16);
+    w.rotation.set(0.14, 0, -0.22);
+    this.weapon = w;
+    this.rig.add(w);
+
+    // a slashing arc that flashes during a swing (hidden otherwise)
+    const slash = new THREE.Mesh(
+      new THREE.RingGeometry(0.7, 1.6, 18, 1, -0.3, 2.0),
+      new THREE.MeshBasicMaterial({ color: 0x9fe8ff, transparent: true, opacity: 0, side: THREE.DoubleSide, depthWrite: false })
+    );
+    slash.rotation.set(0, Math.PI / 2, 0); // vertical arc in front of the hero
+    slash.position.set(0.4, 1.0, 0.5);
+    slash.visible = false;
+    this.slash = slash;
+    this.rig.add(slash);
+  }
+
+  /** Show/hide the held weapon. */
+  setWeaponVisible(v: boolean) {
+    if (this.weapon) this.weapon.visible = v;
+  }
+
+  /** Trigger a sword swing (ignored if mid-swing). */
+  attack() {
+    if (this.attackTimer <= 0) this.attackTimer = 0.45;
+  }
+
+  get isAttacking(): boolean {
+    return this.attackTimer > 0;
+  }
+
+  /** Animate the swing: wind-up → fast chop → recover, with a slash flash. */
+  private updateWeapon(dt: number) {
+    if (!this.weapon) return;
+    const baseX = 0.14;
+    const baseZ = -0.22;
+    if (this.attackTimer > 0) {
+      this.attackTimer = Math.max(0, this.attackTimer - dt);
+      const p = 1 - this.attackTimer / 0.45; // 0..1
+      let rx = baseX;
+      if (p < 0.3) rx = baseX - 1.6 * (p / 0.3); // wind up (raise back)
+      else if (p < 0.6) rx = baseX - 1.6 + 3.2 * ((p - 0.3) / 0.3); // chop down
+      else rx = baseX + 1.6 - 1.6 * ((p - 0.6) / 0.4); // recover
+      this.weapon.rotation.set(rx, 0, baseZ);
+      if (this.slash) {
+        const inSlash = p > 0.3 && p < 0.62;
+        const sm = this.slash.material as THREE.MeshBasicMaterial;
+        sm.opacity = inSlash ? 0.9 * (1 - (p - 0.3) / 0.32) : 0;
+        this.slash.visible = sm.opacity > 0.03;
+      }
+    } else {
+      const s = damp(12, dt);
+      this.weapon.rotation.x += (baseX - this.weapon.rotation.x) * s;
+      this.weapon.rotation.z += (baseZ - this.weapon.rotation.z) * s;
+      if (this.slash) this.slash.visible = false;
+    }
   }
 
   /** Swap the placeholder capsule for a loaded character model. */
@@ -127,6 +219,7 @@ export class Player {
     this.mesh.position.copy(this.body.position);
     this.mesh.rotation.y = this.facing;
     this.animateLocomotion(dt);
+    this.updateWeapon(dt);
 
     const gap = 0.7;
     const startY = CONFIG.player.height + 0.4;

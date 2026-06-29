@@ -39,7 +39,12 @@ export class CaptureSystem {
 
       if (!slot.creature && !slot.pending) {
         slot.timer -= dt;
-        if (slot.timer <= 0) void this.spawn(zone, slot);
+        // don't respawn while the player is still standing on the pad, or they'd
+        // instantly grab the new one (and the next, and the next…)
+        if (slot.timer <= 0) {
+          if (this.playerOnPad(zone)) slot.timer = 0.5;
+          else void this.spawn(zone, slot);
+        }
       } else if (slot.creature) {
         this.tryCapture(zone, slot);
       }
@@ -81,6 +86,15 @@ export class CaptureSystem {
       this.discovered.add(c.def.id);
       this.bus.emit("creature:captured", { value: c.value, rarity: c.def.rarity, name: c.def.name });
     }
+  }
+
+  private playerOnPad(zone: Zone): boolean {
+    const p = this.player.position;
+    const cp = zone.capture.position;
+    const dx = p.x - cp.x;
+    const dz = p.z - cp.z;
+    const r = zone.capture.radius + this.player.magnetRadius + 0.5;
+    return dx * dx + dz * dz <= r * r;
   }
 
   /** Remove a creature from the active list (when stored or lost on death). */

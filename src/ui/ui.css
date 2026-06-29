@@ -45,10 +45,15 @@
 #shop {
   position: fixed; right: 12px; top: 50%; transform: translateY(-50%);
   width: 230px; max-height: 86vh; overflow-y: auto; z-index: 12;
-  display: flex; flex-direction: column; gap: 6px;
+  display: none; flex-direction: column; gap: 6px;
   font: 500 13px/1.25 system-ui, sans-serif;
+  background: rgba(12,16,30,.82); border: 1px solid #3a4a72; border-radius: 12px;
+  padding: 10px; box-shadow: 0 8px 24px rgba(0,0,0,.45);
 }
-#shop .shop-title { color: #aab6d4; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; padding: 2px 4px; }
+#shop.open { display: flex; }
+#shop .shop-title { color: #aab6d4; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; padding: 2px 4px; display: flex; justify-content: space-between; align-items: center; }
+#shop .shop-title .close { cursor: pointer; color: #8fa0c8; font-size: 16px; padding: 0 4px; }
+#shop .shop-title .close:hover { color: #fff; }
 .up-btn {
   display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; align-items: center;
   padding: 7px 10px; border: 1px solid #2c3a5e; border-radius: 9px; background: #141b2e;
@@ -197,3 +202,80 @@
 
 /* on phones, shrink the top toolbar so it doesn't crowd the HUD */
 body.is-touch #ui-buttons { transform: scale(.9); transform-origin: top right; }
+
+/* ---- PvP Arena panel (premium + mobile) ---- */
+.arena-modal .modal-card {
+  background: radial-gradient(120% 90% at 50% 0%, #241430 0%, #10131f 60%);
+  border: 1px solid #6a2740; box-shadow: 0 24px 70px rgba(0,0,0,.6), inset 0 0 60px rgba(255,93,110,.06);
+}
+.arena-modal .modal-card h2 {
+  background: linear-gradient(90deg,#ff8da0,#ffd24b); -webkit-background-clip: text; background-clip: text; color: transparent;
+  letter-spacing: .02em;
+}
+.arena-modal .modal-card h2 .close { -webkit-text-fill-color: #8fa0c8; }
+
+.arena-header { display: flex; justify-content: center; margin: 4px 0 14px; }
+.arena-prize {
+  position: relative; text-align: center; padding: 16px 26px; min-width: 220px;
+  background: radial-gradient(100% 100% at 50% 0%, rgba(255,93,110,.22), rgba(255,93,110,.05));
+  border: 1px solid #ff5d6a; border-radius: 18px;
+  box-shadow: 0 0 28px rgba(255,93,110,.28), inset 0 1px 0 rgba(255,255,255,.08);
+}
+.arena-prize .lbl { font: 900 11px/1 system-ui; letter-spacing: .22em; color: #ffb3bf; margin-bottom: 6px; }
+.arena-prize img {
+  width: 110px; height: 110px; object-fit: contain; display: block; margin: 0 auto;
+  filter: drop-shadow(0 6px 14px rgba(0,0,0,.5));
+  animation: arenaFloat 3s ease-in-out infinite;
+}
+@keyframes arenaFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+.arena-prize .nm { font-weight: 800; color: #fff; margin-top: 4px; font-size: 17px; }
+.arena-prize .tags { justify-content: center; }
+.arena-reroll {
+  margin-top: 10px; background: #2c3a5e; color: #cfe0ff; border: 1px solid #4f6196;
+  border-radius: 12px; padding: 9px 16px; font: 700 13px system-ui; cursor: pointer; min-height: 40px;
+}
+.arena-reroll:hover { background: #38496f; }
+
+/* champion cards — premium, touch-friendly */
+.arena-modal .fuse-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(116px, 1fr)); gap: 10px; }
+.arena-modal .fuse-pick { grid-column: 1 / -1; font-weight: 700; color: #aab6d4; }
+.arena-modal .fuse-card {
+  background: #0e1626; border: 2px solid #243154; border-radius: 14px; padding: 10px;
+  text-align: center; cursor: pointer; transition: border-color .12s, transform .08s, background .12s; position: relative;
+}
+.arena-modal .fuse-card:hover { border-color: #ff8da0; background: #16202f; }
+.arena-modal .fuse-card.sel { border-color: #ffd24b; background: #1d1a2b; box-shadow: 0 0 18px rgba(255,210,75,.3); }
+.arena-modal .fuse-card img { width: 76px; height: 76px; object-fit: contain; background: #0a1120; border-radius: 10px; }
+.arena-modal .fuse-card .nm { font-weight: 700; font-size: 12px; margin-top: 6px; }
+.arena-modal .fuse-card .fuse-badge { position: absolute; top: 6px; right: 8px; color: #ffd24b; font-weight: 900; }
+.arena-modal .fuse-btn {
+  grid-column: 1 / -1; margin-top: 6px; padding: 15px; border-radius: 14px; border: 0;
+  font: 900 16px system-ui; color: #1a0f12; cursor: pointer; min-height: 54px;
+  background: linear-gradient(90deg,#ff8da0,#ffd24b); box-shadow: 0 8px 22px rgba(255,93,110,.35);
+}
+.arena-modal .fuse-btn:disabled { background: #2a3350; color: #6b7a9c; box-shadow: none; cursor: default; }
+
+/* mobile: full-bleed sheet, bigger tap targets */
+@media (max-width: 640px), (pointer: coarse) {
+  .arena-modal .modal-card { width: 100vw; max-height: 92vh; border-radius: 18px 18px 0 0; align-self: flex-end; padding: 16px 14px 22px; }
+  .arena-modal .fuse-list { grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); }
+  .arena-prize img { width: 96px; height: 96px; }
+}
+
+.arena-odds { grid-column: 1 / -1; text-align: center; font: 600 13px system-ui; color: #aab6d4; padding: 4px 0; }
+.arena-odds b { color: #eaf0ff; }
+
+/* ---- Onboarding objective banner ---- */
+#objective {
+  position: fixed; top: 14px; left: 14px; z-index: 12; max-width: 280px;
+  background: rgba(16,22,40,.86); border: 1px solid #3a4a72; border-left: 4px solid #4fa3ff;
+  border-radius: 10px; padding: 9px 12px; color: #eaf0ff; backdrop-filter: blur(6px);
+  opacity: 0; transform: translateX(-12px); transition: opacity .3s, transform .3s, border-color .3s, background .3s;
+  pointer-events: none;
+}
+#objective.show { opacity: 1; transform: translateX(0); }
+#objective.done { border-left-color: #2ee6a6; background: rgba(20,60,46,.9); }
+#objective .obj-lbl { font: 800 11px/1 system-ui; letter-spacing: .12em; color: #8fb6ff; text-transform: uppercase; margin-bottom: 4px; }
+#objective.done .obj-lbl { color: #6ff0c0; }
+#objective .obj-text { font: 600 13px/1.35 system-ui; }
+@media (max-width: 640px) { #objective { top: 58px; max-width: 56vw; font-size: 12px; } }

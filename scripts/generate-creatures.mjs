@@ -35,7 +35,29 @@ const BATTLE_STYLE =
   "Colorful, goofy, exaggerated proportions, low poly, cute but fierce and battle-ready, " +
   "dynamic ready-to-fight pose, single character, game-ready, under 5000 triangles, GLB.";
 
+// Stronger texture-focused style so the refine pass produces RICH surfaces
+// (patterns, multi-material contrast, weathering, glow) — not a flat color fill.
+const RICH_STYLE =
+  "Stylized collectible game creature, vibrant and full of character, exaggerated cute-but-fierce " +
+  "proportions, dynamic ready-to-fight pose, single character. " +
+  "RICH DETAILED TEXTURES: hand-painted surface detail, several contrasting materials " +
+  "(glossy, matte, metallic, fabric, glass), patterns and markings, subtle color gradients and " +
+  "ambient-occlusion shading, weathered worn edges, glowing emissive accents — absolutely NOT a flat " +
+  "single-color fill. Clean topology, game-ready, low poly, GLB.";
+
 const CURATED = [
+  { name: "Mushroom Toad Shaman", rarity: "epic", element: "beast", role: "support",
+    prompt: `An original cartoon creature: a chubby warty toad shaman crowned with a glowing bioluminescent mushroom cap, draped in mossy leaf robes, holding a gnarled spore-staff puffing glowing spores; speckled amphibian skin, mossy patches, glowing gills. ${RICH_STYLE}` },
+  { name: "Cactus Gunslinger", rarity: "rare", element: "object", role: "assassin",
+    prompt: `An original cartoon creature: a desert cactus gunslinger in a tiny poncho and cowboy hat, one arm shaped like a six-shooter revolver; prickly spines, cracked sun-baked green skin, dusty worn leather and metal. ${RICH_STYLE}` },
+  { name: "Lava Lamp Jellyfish", rarity: "epic", element: "cosmic", role: "trickster",
+    prompt: `An original cartoon creature: a translucent glowing jellyfish floating inside a retro lava-lamp body, drifting neon blobs, iridescent gradient gel, glassy reflective casing, dangling glowing tentacles. ${RICH_STYLE}` },
+  { name: "Vending Machine Golem", rarity: "epic", element: "tech", role: "tank",
+    prompt: `An original cartoon creature: a hulking vending-machine golem mech, glass front showing glowing soda cans, two heavy can-launcher fists; brushed metal panels, scratched paint, blinking LED buttons, sticker decals. ${RICH_STYLE}` },
+  { name: "Origami Crane Ronin", rarity: "rare", element: "object", role: "fighter",
+    prompt: `An original cartoon creature: a folded paper origami crane ronin warrior, crisp sharp paper folds, wielding a paper-fan blade; painted ink brush patterns and gold-leaf accents on textured washi paper. ${RICH_STYLE}` },
+  { name: "Cosmic Donut Cat", rarity: "legendary", element: "cosmic", role: "assassin",
+    prompt: `An original cartoon creature: a sly cat made of a glazed donut, its hole a swirling galaxy with tiny stars, rainbow sprinkles, glossy dripping icing, sugary sparkle texture, glowing cosmic eyes. ${RICH_STYLE}` },
   { name: "Broccoli Samurai", rarity: "epic", element: "food", role: "fighter",
     prompt: `An original cartoon creature: a broccoli warrior samurai clad in segmented armor, wielding a sharp katana, fierce battle stance. ${BATTLE_STYLE}` },
   { name: "Refrigerator Bruiser", rarity: "epic", element: "tech", role: "tank",

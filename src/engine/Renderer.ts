@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { CONFIG } from "../config.ts";
+import { QUALITY } from "./quality.ts";
 
 /**
  * Owns the WebGLRenderer and the perspective camera + viewport resize.
@@ -9,10 +10,10 @@ export class Renderer {
   readonly camera: THREE.PerspectiveCamera;
 
   constructor(canvas: HTMLCanvasElement) {
-    this.gl = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
-    this.gl.setPixelRatio(Math.min(window.devicePixelRatio, CONFIG.render.pixelRatioCap));
+    this.gl = new THREE.WebGLRenderer({ canvas, antialias: QUALITY.antialias, powerPreference: "high-performance" });
+    this.gl.setPixelRatio(Math.min(window.devicePixelRatio, QUALITY.pixelRatioCap));
     this.gl.shadowMap.enabled = true;
-    this.gl.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.gl.shadowMap.type = QUALITY.softShadows ? THREE.PCFSoftShadowMap : THREE.PCFShadowMap;
     this.gl.outputColorSpace = THREE.SRGBColorSpace;
 
     this.camera = new THREE.PerspectiveCamera(

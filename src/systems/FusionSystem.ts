@@ -23,6 +23,7 @@ interface Snapshot {
   rarB: Rarity;
   nameA: string;
   nameB: string;
+  level: number; // inherited from the higher-level parent
 }
 
 /**
@@ -99,6 +100,7 @@ export class FusionSystem {
       rarB: b.def.rarity,
       nameA: a.def.name,
       nameB: b.def.name,
+      level: Math.max(a.level, b.level), // child keeps the parents' investment
     };
     this.baseStorage.remove(a);
     this.baseStorage.remove(b);
@@ -137,12 +139,14 @@ export class FusionSystem {
     }
     const mesh = await this.library.createInstance(def);
     this.scene.add(mesh);
-    const child = new Creature(def, mesh, 1);
+    const child = new Creature(def, mesh, s.level);
     const placed = this.baseStorage.store(child);
     if (!placed) this.scene.remove(mesh);
 
     const upText = ro.up > 0 ? ` (+${ro.up} rarity!)` : "";
-    this.bus.emit("notify", { text: `Spliced: ${def.name} [${def.rarity}]${upText}`, kind: "good" });
+    const lvlText = s.level > 1 ? ` Lv${s.level}` : "";
+    this.bus.emit("notify", { text: `Spliced: ${def.name} [${def.rarity}]${lvlText}${upText}`, kind: "good" });
+    this.bus.emit("fusion:done", {});
     this.onChange?.();
   }
 }

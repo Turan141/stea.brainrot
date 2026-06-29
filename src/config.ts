@@ -79,7 +79,7 @@ export const CONFIG = {
   ],
 
   capture: {
-    respawnDelay: 1.0, // seconds after a creature is taken before next appears
+    respawnDelay: 30.0, // seconds after a creature is taken before next appears
     bobHeight: 0.25,
   },
 

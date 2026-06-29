@@ -2,6 +2,7 @@ import type { BaseStorage } from "../systems/BaseStorage.ts";
 import type { FusionSystem } from "../systems/FusionSystem.ts";
 import type { EconomySystem } from "../systems/EconomySystem.ts";
 import type { Creature } from "../creatures/Creature.ts";
+import type { ThumbnailRenderer } from "./ThumbnailRenderer.ts";
 import { ELEMENT_LABEL, ROLE_LABEL } from "../creatures/types.ts";
 
 /**
@@ -14,12 +15,14 @@ export class FusionPanel {
   private status: HTMLElement;
   private selA: Creature | null = null;
   private selB: Creature | null = null;
+  private wasBusy = false;
 
   constructor(
     root: HTMLElement,
     private baseStorage: BaseStorage,
     private fusion: FusionSystem,
     private economy: EconomySystem,
+    private thumbs: ThumbnailRenderer,
     private onFused: () => void
   ) {
     this.modal = document.createElement("div");
@@ -59,9 +62,21 @@ export class FusionPanel {
     this.modal.classList.remove("open");
   }
 
-  /** Called each frame; keeps the cooldown bar / odds live while open. */
+  /**
+   * Called each frame. Only rebuilds while the lab is busy (live cooldown bar)
+   * and once when it finishes — otherwise the static preview/button stays put so
+   * the Splice button doesn't get recreated under the cursor every frame.
+   */
   update() {
-    if (this.isOpen) this.updateStatus();
+    if (!this.isOpen) return;
+    if (this.fusion.busy) {
+      this.updateStatus();
+      this.wasBusy = true;
+    } else if (this.wasBusy) {
+      this.wasBusy = false;
+      this.refreshList(); // the new hybrid has arrived in the cages
+      this.updateStatus();
+    }
   }
 
   private select(c: Creature) {
@@ -103,6 +118,8 @@ export class FusionPanel {
           <span class="tag tag-${def.element}">${def.element ? ELEMENT_LABEL[def.element] : ""}</span>
           <span class="tag tag-role">${def.role ? ROLE_LABEL[def.role] : ""}</span>
         </div>`;
+      const img = card.querySelector("img") as HTMLImageElement | null;
+      if (img) this.thumbs.apply(img, def);
       card.addEventListener("click", () => this.select(c));
       this.list.appendChild(card);
     }
@@ -130,6 +147,7 @@ export class FusionPanel {
         <div class="fuse-preview">
           <div class="row"><span>Type →</span><b>${p.elementText}</b></div>
           <div class="row"><span>Rarity →</span><b>${p.rarityText}</b></div>
+          <div class="row"><span>Level →</span><b>Lv${Math.max(this.selA.level, this.selB.level)} (kept)</b></div>
           ${p.cosmicNote ? `<div class="row note">${p.cosmicNote}</div>` : ""}
           <div class="row"><span>Cost</span><b>🧬 ${p.cost}</b></div>
           <button class="fuse-btn" ${can ? "" : "disabled"}>⚗️ Splice (parents burn)</button>

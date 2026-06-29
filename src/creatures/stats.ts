@@ -102,6 +102,27 @@ export function ensureFullDef(def: CreatureDef): CreatureDef {
  * Derive level-scaled combat stats from a creature's base block. Shared source
  * of truth — the same scaling idea income uses, reserved for the battle system.
  */
+// Element rock-paper cycle: each beats the next, loses to the previous.
+// food → tech → beast → object → cosmic → food
+const ELEM_CYCLE: Element[] = ["food", "tech", "beast", "object", "cosmic"];
+
+/** Damage multiplier for attacker's element vs defender's (1.35 / 0.74 / 1). */
+export function elementMultiplier(att?: Element, def?: Element): number {
+  if (!att || !def || att === def) return 1;
+  const i = ELEM_CYCLE.indexOf(att);
+  const j = ELEM_CYCLE.indexOf(def);
+  if (i < 0 || j < 0) return 1;
+  if ((i + 1) % ELEM_CYCLE.length === j) return 1.35; // att beats def
+  if ((j + 1) % ELEM_CYCLE.length === i) return 0.74; // def beats att
+  return 1;
+}
+
+/** A single "power" number for quick UI comparisons (champion vs prize). */
+export function combatPower(def: CreatureDef, level: number): number {
+  const s = deriveCombat(def, level);
+  return Math.round(s.hp / 8 + s.attack * 2 + s.defense + s.speed);
+}
+
 export function deriveCombat(def: CreatureDef, level: number): CombatStats {
   const base = def.stats ?? defaultStats(def);
   const k = 1 + (level - 1) * 0.12;

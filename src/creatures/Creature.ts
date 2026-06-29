@@ -25,19 +25,24 @@ export class Creature implements Carryable {
   private wWait = 0;
   private wMoving = false;
 
+  /** <1 for Arena clones (they earn less than a "real" captured creature). */
+  cloneFactor: number;
+
   constructor(
     readonly def: CreatureDef,
     readonly mesh: THREE.Object3D,
-    level = 1
+    level = 1,
+    cloneFactor = 1
   ) {
     this.baseIncome = def.income;
     this.level = level;
+    this.cloneFactor = cloneFactor;
     this.phase = (def.seed % 100) / 10;
   }
 
   /** Leveled passive income (Lv1 = base, +50% of base per extra level). */
   get value(): number {
-    return Math.round(this.baseIncome * (1 + (this.level - 1) * 0.5));
+    return Math.round(this.baseIncome * (1 + (this.level - 1) * 0.5) * this.cloneFactor);
   }
 
   /** Cost to upgrade to the next level. */

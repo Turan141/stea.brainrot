@@ -1,4 +1,5 @@
 import type { CreatureLibrary } from "../creatures/CreatureLibrary.ts";
+import type { ThumbnailRenderer } from "./ThumbnailRenderer.ts";
 import { ELEMENT_LABEL, ROLE_LABEL } from "../creatures/types.ts";
 
 /**
@@ -12,7 +13,8 @@ export class Inventory {
   constructor(
     root: HTMLElement,
     private library: CreatureLibrary,
-    private discovered: Set<string>
+    private discovered: Set<string>,
+    private thumbs: ThumbnailRenderer
   ) {
     this.modal = document.createElement("div");
     this.modal.className = "modal";
@@ -58,6 +60,8 @@ export class Inventory {
           <div class="rar rar-${def.rarity}">${def.rarity}</div>
           <div class="tags"><span class="tag tag-${def.element}">${type}</span><span class="tag tag-role">${role}</span></div>
           <div class="inc">$${def.income}/s</div>`;
+        const img = card.querySelector("img") as HTMLImageElement | null;
+        if (img) this.thumbs.apply(img, def);
       } else {
         card.innerHTML = `
           <img src="" style="visibility:hidden"/>

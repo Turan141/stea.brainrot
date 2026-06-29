@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { CONFIG } from "../config.ts";
+import { Box } from "../world/types.ts";
 import { Creature } from "../creatures/Creature.ts";
 import type { CreatureLibrary } from "../creatures/CreatureLibrary.ts";
 
@@ -35,7 +36,7 @@ export class BaseStorage {
     if (assets.has("base-cage")) {
       this.cageGroup.clear();
       for (const cage of this.cages) {
-        const m = assets.instance("base-cage", cageCell - 0.4);
+        const m = assets.instance("base-cage", cageCell - 2.2); // ~4.8u, leaves walkable gaps
         if (!m) break;
         m.position.set(cage.center.x, deckTop, cage.center.z);
         m.traverse((o) => {
@@ -152,6 +153,14 @@ export class BaseStorage {
     this.fountainGroup.add(water);
   }
 
+  /** Solid XZ collision boxes for the cage pens and the central fountain. */
+  get colliders(): Box[] {
+    const half = 2.4; // cage footprint half (matches the ~4.8u model)
+    const out = this.cages.map((c) => new Box(c.center.x, 1.5, c.center.z, half, 2, half));
+    out.push(new Box(CONFIG.base.centerX, 1, CONFIG.base.centerZ, 2.7, 2, 2.7)); // fountain
+    return out;
+  }
+
   get isFull(): boolean {
     return this.stored.length >= this.capacity || !this.cages.some((c) => !c.occupant);
   }
@@ -224,18 +233,18 @@ export class BaseStorage {
 
   // --- persistence ---
 
-  serialize(): { id: string; level: number }[] {
-    return this.stored.map((c) => ({ id: c.def.id, level: c.level }));
+  serialize(): { id: string; level: number; clone?: number }[] {
+    return this.stored.map((c) => ({ id: c.def.id, level: c.level, ...(c.cloneFactor < 1 ? { clone: c.cloneFactor } : {}) }));
   }
 
   /** Rebuild stored creatures (with their levels) from save on load. */
-  async restore(entries: { id: string; level: number }[], library: CreatureLibrary) {
+  async restore(entries: { id: string; level: number; clone?: number }[], library: CreatureLibrary) {
     for (const e of entries) {
       const def = library.byId(e.id);
       if (!def) continue;
       const mesh = await library.createInstance(def);
       this.scene.add(mesh);
-      this.store(new Creature(def, mesh, e.level));
+      this.store(new Creature(def, mesh, e.level, e.clone ?? 1));
     }
   }
 }

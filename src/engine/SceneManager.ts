@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { CONFIG } from "../config.ts";
+import { QUALITY } from "./quality.ts";
 
 /**
  * Builds the THREE.Scene with sky, fog and lighting rig. Pure presentation —
@@ -21,7 +21,7 @@ export class SceneManager {
     this.sun = new THREE.DirectionalLight(0xfff2d9, 1.5);
     this.sun.position.set(40, 70, 30);
     this.sun.castShadow = true;
-    this.sun.shadow.mapSize.set(CONFIG.render.shadowMapSize, CONFIG.render.shadowMapSize);
+    this.sun.shadow.mapSize.set(QUALITY.shadowMapSize, QUALITY.shadowMapSize);
     const d = 80;
     const cam = this.sun.shadow.camera;
     cam.left = -d;

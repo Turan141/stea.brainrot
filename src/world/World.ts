@@ -6,6 +6,7 @@ import { CONFIG } from "../config.ts";
 import { grassTexture, plazaTexture } from "./textures.ts";
 import { BaseBlockout } from "./BaseBlockout.ts";
 import { BaseDecor } from "./BaseDecor.ts";
+import { Environment } from "./Environment.ts";
 
 export interface Bounds {
   minX: number;
@@ -26,6 +27,10 @@ export class World {
   readonly zoneManager: ZoneManager;
   private blockout!: BaseBlockout;
   private decor?: BaseDecor;
+  private environment!: Environment;
+
+  /** Solid XZ boxes the player is pushed out of (walls, buildings, cages…). */
+  private solids: Box[] = [];
 
   /** Base structures the follow-camera should pull in front of (avoid occlusion). */
   get occluders(): THREE.Object3D[] {
@@ -45,11 +50,50 @@ export class World {
     // build the decoration pass now that assets are loaded, so props use the
     // generated textured models where available (procedural fallback otherwise)
     this.decor = new BaseDecor(this.scene, assets);
+    this.solids.push(...this.decor.colliders);
   }
 
   /** World position of a base building (for proximity interactions). */
   buildingPosition(id: string): THREE.Vector3 | null {
     return this.blockout.buildingPosition(id);
+  }
+
+  /** Register extra solid collision boxes (e.g. cages/fountain from BaseStorage). */
+  addColliders(boxes: Box[]) {
+    this.solids.push(...boxes);
+  }
+
+  /**
+   * Push the player's circle out of any solid box it overlaps (XZ only —
+   * solids are treated as full-height walls). Cheap: a few dozen boxes.
+   */
+  resolveCollisions(position: THREE.Vector3, radius: number) {
+    for (const b of this.solids) {
+      // standing on (or above) the box top → no horizontal push, let them stand
+      if (position.y >= b.top - STEP) continue;
+      const nx = THREE.MathUtils.clamp(position.x, b.cx - b.hx, b.cx + b.hx);
+      const nz = THREE.MathUtils.clamp(position.z, b.cz - b.hz, b.cz + b.hz);
+      const dx = position.x - nx;
+      const dz = position.z - nz;
+      const d2 = dx * dx + dz * dz;
+      if (d2 > radius * radius) continue; // no overlap
+      if (d2 > 1e-6) {
+        const d = Math.sqrt(d2);
+        const push = radius - d;
+        position.x += (dx / d) * push;
+        position.z += (dz / d) * push;
+      } else {
+        // center inside the box: eject through the nearest face
+        const left = position.x - (b.cx - b.hx);
+        const right = b.cx + b.hx - position.x;
+        const front = position.z - (b.cz - b.hz);
+        const back = b.cz + b.hz - position.z;
+        const mX = Math.min(left, right);
+        const mZ = Math.min(front, back);
+        if (mX < mZ) position.x += left < right ? -(mX + radius) : mX + radius;
+        else position.z += front < back ? -(mZ + radius) : mZ + radius;
+      }
+    }
   }
 
   /** Support the player landed on this frame (for moving-platform ride). */
@@ -73,8 +117,10 @@ export class World {
     ground.receiveShadow = true;
     this.scene.add(ground);
 
+    this.environment = new Environment(this.scene, size);
     this.buildBase();
     this.blockout = new BaseBlockout(this.scene);
+    this.solids.push(...this.blockout.colliders);
 
     this.zoneManager = new ZoneManager(this.scene);
   }
@@ -138,6 +184,7 @@ export class World {
   update(dt: number, t: number) {
     this.zoneManager.update(dt, t);
     this.decor?.update(t);
+    this.environment.update(t);
   }
 
   /** Highest standable surface under (x,z) at/below the body (ground = 0). */
@@ -167,6 +214,10 @@ export class World {
           }
         }
       }
+    }
+    // solid props/structures are standable on top (jump onto crates, benches…)
+    for (const b of this.solids) {
+      if (b.containsXZ(x, z) && b.top <= belowY + STEP && b.top > best) best = b.top;
     }
     this.lastSupport = support;
     return best;

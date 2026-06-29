@@ -14,6 +14,7 @@ interface Row {
  */
 export class Shop {
   private rows = new Map<UpgradeKey, Row>();
+  private panel: HTMLElement;
 
   constructor(
     root: HTMLElement,
@@ -23,9 +24,16 @@ export class Shop {
   ) {
     const panel = document.createElement("div");
     panel.id = "shop";
+    this.panel = panel;
     const title = document.createElement("div");
     title.className = "shop-title";
-    title.textContent = "Upgrades";
+    const label = document.createElement("span");
+    label.textContent = "🔧 Upgrades";
+    const close = document.createElement("span");
+    close.className = "close";
+    close.textContent = "✕";
+    close.addEventListener("click", () => this.close());
+    title.append(label, close);
     panel.appendChild(title);
 
     for (const def of UpgradeSystem.defs) {
@@ -46,6 +54,20 @@ export class Shop {
     }
     root.appendChild(panel);
     this.refresh();
+  }
+
+  get isOpen(): boolean {
+    return this.panel.classList.contains("open");
+  }
+  open() {
+    this.refresh();
+    this.panel.classList.add("open");
+  }
+  close() {
+    this.panel.classList.remove("open");
+  }
+  toggle() {
+    this.isOpen ? this.close() : this.open();
   }
 
   refresh() {

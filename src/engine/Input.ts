@@ -1,6 +1,6 @@
 import * as THREE from "three";
 
-export type ActionName = "jump" | "sprint" | "dash" | "interact" | "sell";
+export type ActionName = "jump" | "sprint" | "dash" | "interact" | "sell" | "attack";
 
 const KEY_BINDINGS: Record<string, ActionName> = {
   Space: "jump",
@@ -9,6 +9,7 @@ const KEY_BINDINGS: Record<string, ActionName> = {
   KeyF: "dash",
   KeyE: "interact",
   KeyQ: "sell",
+  KeyJ: "attack",
 };
 
 /**

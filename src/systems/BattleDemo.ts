@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { deriveCombat } from "../creatures/stats.ts";
+import { deriveCombat, elementMultiplier } from "../creatures/stats.ts";
 import type { CreatureLibrary } from "../creatures/CreatureLibrary.ts";
 import { ELEMENT_COLOR, ROLE_LABEL, type CreatureDef } from "../creatures/types.ts";
 import type { EventBus } from "../engine/EventBus.ts";
@@ -23,6 +23,8 @@ interface Fighter {
   death: number; // death anim progress
   bar: THREE.Sprite;
   baseScale: number;
+  shield: number; // tank block window (seconds remaining)
+  abilityCd: number; // time until next role ability
 }
 
 interface Particle {
@@ -42,31 +44,38 @@ interface Particle {
  */
 export class BattleDemo {
   active = false;
-  readonly center = new THREE.Vector3(0, 0, 40);
+  readonly center = new THREE.Vector3(-78, 0, -68); // dedicated colosseum, far-left field
 
-  private pad: THREE.Group | null = null;
   private fighters: Fighter[] = [];
   private particles: Particle[] = [];
   private overTimer = 0;
   private dot = makeDotTexture();
+  private onResult: ((playerWon: boolean) => void) | null = null;
+  private resolved = false;
 
   constructor(
     private scene: THREE.Scene,
     private library: CreatureLibrary,
     private bus: EventBus
-  ) {}
+  ) {
+    this.buildArena();
+  }
 
-  /** Begin a battle between two creature defs. */
-  async start(a: CreatureDef, b: CreatureDef) {
+  /**
+   * Begin a battle between two creature defs. `a` is the player's champion
+   * (left). onResult fires once when a winner is decided (true = player won).
+   */
+  async start(a: CreatureDef, b: CreatureDef, onResult?: (playerWon: boolean) => void, levelA = 1, levelB = 1) {
     if (this.active) return;
     this.active = true;
     this.overTimer = 0;
-    this.buildPad();
+    this.resolved = false;
+    this.onResult = onResult ?? null;
 
     this.fighters = [];
-    for (const [def, side] of [
-      [a, -1],
-      [b, 1],
+    for (const [def, side, level] of [
+      [a, -1, levelA],
+      [b, 1, levelB],
     ] as const) {
       const mesh = await this.library.createInstance(def);
       const baseScale = mesh.scale.x * 2; // bigger so the fight reads
@@ -76,7 +85,7 @@ export class BattleDemo {
       mesh.rotation.y = side < 0 ? Math.PI / 2 : -Math.PI / 2; // face the middle
       this.scene.add(mesh);
 
-      const s = deriveCombat(def, 1);
+      const s = deriveCombat(def, level);
       const bar = this.makeBar(def);
       bar.position.set(home.x, 3.2, home.z);
       this.scene.add(bar);
@@ -100,6 +109,8 @@ export class BattleDemo {
         death: 0,
         bar,
         baseScale,
+        shield: 0,
+        abilityCd: 3 + Math.random() * 3,
       });
     }
     this.bus.emit("notify", { text: `⚔️ ${a.name} vs ${b.name}!`, kind: "info" });
@@ -120,6 +131,7 @@ export class BattleDemo {
 
   private updateFighter(f: Fighter, enemy: Fighter, dt: number) {
     if (f.mixer) f.mixer.update(dt);
+    f.shield = Math.max(0, f.shield - dt);
 
     // hit reaction (squash + jitter)
     if (f.flash > 0) {
@@ -143,6 +155,22 @@ export class BattleDemo {
     // idle bob
     if (f.state === "idle") {
       f.mesh.position.y = Math.abs(Math.sin(performance.now() / 220 + f.side)) * 0.08;
+
+      // role active ability on a timer (tank shields, support heals)
+      f.abilityCd -= dt;
+      if (f.abilityCd <= 0 && enemy.state !== "dead") {
+        if (f.def.role === "tank") {
+          f.shield = 2.2;
+          this.spawnText(f.home, "SHIELD", "#9fc0ff");
+        } else if (f.def.role === "support") {
+          const heal = Math.round(f.maxHp * 0.18);
+          f.hp = Math.min(f.maxHp, f.hp + heal);
+          this.redrawBar(f);
+          this.spawnText(f.home, `+${heal}`, "#3fe07a");
+        }
+        f.abilityCd = 5 + Math.random() * 3;
+      }
+
       f.cd -= dt;
       if (f.cd <= 0 && enemy.state !== "dead") {
         f.state = "lunge";
@@ -179,10 +207,30 @@ export class BattleDemo {
   }
 
   private strike(attacker: Fighter, victim: Fighter) {
-    const dmg = Math.max(1, Math.round((attacker.atk - victim.defense * 0.5) * (0.85 + Math.random() * 0.3)));
+    // trickster evasion
+    if (victim.def.role === "trickster" && Math.random() < 0.22) {
+      this.spawnText(victim.home, "DODGE", "#9fe8ff");
+      return;
+    }
+    let dmg = attacker.atk - victim.defense * 0.5;
+    dmg *= elementMultiplier(attacker.def.element, victim.def.element); // type advantage
+    let critLabel: string | null = null;
+    if (attacker.def.role === "assassin" && Math.random() < 0.3) {
+      dmg *= 2;
+      critLabel = "CRIT";
+    } else if (attacker.def.role === "fighter" && Math.random() < 0.25) {
+      dmg *= 1.6;
+      critLabel = "POWER";
+    }
+    if (victim.shield > 0) {
+      dmg *= 0.4; // tank block
+      this.spawnText(victim.home, "BLOCK", "#9fc0ff");
+    }
+    dmg = Math.max(1, Math.round(dmg * (0.85 + Math.random() * 0.3)));
     victim.hp = Math.max(0, victim.hp - dmg);
     victim.flash = 0.2;
     this.redrawBar(victim);
+    if (critLabel) this.spawnText(victim.home, critLabel, "#ffd24b");
     this.spawnNumber(victim.home, dmg);
     this.spawnBurst(victim.home);
 
@@ -190,32 +238,97 @@ export class BattleDemo {
       victim.state = "dead";
       victim.death = 0;
       this.bus.emit("notify", { text: `🏆 ${attacker.def.name} wins!`, kind: "good" });
+      if (!this.resolved) {
+        this.resolved = true;
+        this.onResult?.(attacker.side < 0); // left fighter is the player's champion
+      }
     }
   }
 
-  // --- arena pad ---
-  private buildPad() {
-    if (this.pad) {
-      this.pad.visible = true;
-      return;
-    }
+  // --- premium colosseum (built once, always visible as a landmark) ---
+  private buildArena() {
+    const { x, z } = this.center;
     const g = new THREE.Group();
-    const disc = new THREE.Mesh(
-      new THREE.CylinderGeometry(7, 7.4, 0.3, 40),
-      new THREE.MeshStandardMaterial({ color: 0x2a2030, roughness: 0.8, emissive: 0x140a1c, emissiveIntensity: 0.5 })
-    );
-    disc.position.set(this.center.x, 0.15, this.center.z);
-    disc.receiveShadow = true;
-    g.add(disc);
-    const ring = new THREE.Mesh(
-      new THREE.TorusGeometry(7, 0.18, 8, 48),
-      new THREE.MeshStandardMaterial({ color: 0xff5d8f, emissive: 0xff5d8f, emissiveIntensity: 1 })
-    );
-    ring.rotation.x = -Math.PI / 2;
-    ring.position.set(this.center.x, 0.32, this.center.z);
-    g.add(ring);
+
+    const marbleLight = new THREE.MeshStandardMaterial({ color: 0xe7e0cf, roughness: 0.55, metalness: 0.05 });
+    const marbleMid = new THREE.MeshStandardMaterial({ color: 0xcdc4ad, roughness: 0.6 });
+    const marbleDark = new THREE.MeshStandardMaterial({ color: 0xb4ab92, roughness: 0.65 });
+    const gold = new THREE.MeshStandardMaterial({ color: 0xe9c46a, roughness: 0.35, metalness: 0.7, emissive: 0x6a4f12, emissiveIntensity: 0.3 });
+
+    // arena floor — polished dark stone with a glowing emblem ring
+    const floor = new THREE.Mesh(new THREE.CylinderGeometry(9, 9.6, 0.4, 56), new THREE.MeshStandardMaterial({ color: 0x241b2c, roughness: 0.5, metalness: 0.2, emissive: 0x140a1c, emissiveIntensity: 0.4 }));
+    floor.position.set(x, 0.2, z);
+    floor.receiveShadow = true;
+    g.add(floor);
+    for (const rr of [4.6, 6.2]) {
+      const emblem = new THREE.Mesh(new THREE.TorusGeometry(rr, 0.12, 8, 64), new THREE.MeshStandardMaterial({ color: 0xff5d8f, emissive: 0xff5d8f, emissiveIntensity: 1.1 }));
+      emblem.rotation.x = -Math.PI / 2;
+      emblem.position.set(x, 0.42, z);
+      g.add(emblem);
+    }
+
+    // tiered amphitheater bowl (concentric stepped walls)
+    const tiers: [number, number, THREE.Material][] = [
+      [10.5, 1.6, marbleLight],
+      [13, 2.9, marbleMid],
+      [15.5, 4.3, marbleDark],
+    ];
+    for (const [r, h, mat] of tiers) {
+      const wall = new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, 56, 1, true), mat);
+      wall.position.set(x, h / 2, z);
+      wall.receiveShadow = true;
+      g.add(wall);
+      const rail = new THREE.Mesh(new THREE.TorusGeometry(r, 0.16, 8, 64), gold);
+      rail.rotation.x = -Math.PI / 2;
+      rail.position.set(x, h, z);
+      g.add(rail);
+    }
+
+    // colonnade on the outer rim (instanced) + architrave ring
+    const colCount = 20;
+    const colGeo = new THREE.CylinderGeometry(0.42, 0.5, 5.4, 8);
+    const cols = new THREE.InstancedMesh(colGeo, marbleLight, colCount);
+    const d = new THREE.Object3D();
+    for (let i = 0; i < colCount; i++) {
+      const a = (i / colCount) * Math.PI * 2;
+      d.position.set(x + Math.cos(a) * 15.5, 4.3 + 2.7, z + Math.sin(a) * 15.5);
+      d.rotation.set(0, 0, 0);
+      d.updateMatrix();
+      cols.setMatrixAt(i, d.matrix);
+    }
+    cols.castShadow = true;
+    g.add(cols);
+    const architrave = new THREE.Mesh(new THREE.TorusGeometry(15.5, 0.45, 8, 72), gold);
+    architrave.rotation.x = -Math.PI / 2;
+    architrave.position.set(x, 9.8, z);
+    g.add(architrave);
+
+    // braziers + banners at the four cardinals
+    const accents = [0x4f8fff, 0xff5d8f, 0xffc24b, 0xa970ff];
+    for (let i = 0; i < 4; i++) {
+      const a = (i / 4) * Math.PI * 2 + Math.PI / 4;
+      const bx = x + Math.cos(a) * 9.2;
+      const bz = z + Math.sin(a) * 9.2;
+      const bowl = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.3, 0.5, 10), gold);
+      bowl.position.set(bx, 1.5, bz);
+      g.add(bowl);
+      const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.14, 1.4, 6), gold);
+      stem.position.set(bx, 0.7, bz);
+      g.add(stem);
+      const flame = new THREE.Mesh(new THREE.ConeGeometry(0.45, 1.2, 8), new THREE.MeshStandardMaterial({ color: 0xffa336, emissive: 0xff6a1a, emissiveIntensity: 2 }));
+      flame.position.set(bx, 2.2, bz);
+      g.add(flame);
+      const light = new THREE.PointLight(0xff8a3a, 0.8, 22, 2);
+      light.position.set(bx, 3, bz);
+      g.add(light);
+      // tall banner on the outer wall
+      const banner = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 5, 1, 1), new THREE.MeshStandardMaterial({ color: accents[i], emissive: accents[i], emissiveIntensity: 0.12, side: THREE.DoubleSide, roughness: 0.9 }));
+      banner.position.set(x + Math.cos(a) * 15.2, 5, z + Math.sin(a) * 15.2);
+      banner.lookAt(x, 5, z);
+      g.add(banner);
+    }
+
     this.scene.add(g);
-    this.pad = g;
   }
 
   private end() {
@@ -226,7 +339,6 @@ export class BattleDemo {
     this.fighters = [];
     for (const p of this.particles) this.scene.remove(p.obj);
     this.particles = [];
-    if (this.pad) this.pad.visible = false;
     this.active = false;
   }
 
@@ -286,6 +398,30 @@ export class BattleDemo {
     spr.renderOrder = 999;
     this.scene.add(spr);
     this.particles.push({ obj: spr, vel: new THREE.Vector3(0, 2.2, 0), life: 0.9, max: 0.9, s0: 2, grow: false });
+  }
+
+  /** Floating ability label (CRIT / DODGE / BLOCK / SHIELD / +heal). */
+  private spawnText(at: THREE.Vector3, text: string, color: string) {
+    const c = document.createElement("canvas");
+    c.width = 200;
+    c.height = 64;
+    const ctx = c.getContext("2d")!;
+    ctx.font = "900 40px system-ui, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.lineWidth = 6;
+    ctx.strokeStyle = "rgba(0,0,0,0.75)";
+    ctx.strokeText(text, 100, 34);
+    ctx.fillStyle = color;
+    ctx.fillText(text, 100, 34);
+    const tex = new THREE.CanvasTexture(c);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    const spr = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false }));
+    spr.scale.set(2.6, 0.83, 1);
+    spr.position.set(at.x + (Math.random() - 0.5) * 0.6, 4.2, at.z);
+    spr.renderOrder = 999;
+    this.scene.add(spr);
+    this.particles.push({ obj: spr, vel: new THREE.Vector3(0, 1.8, 0), life: 1.0, max: 1.0, s0: 2.6, grow: false });
   }
 
   private makeBar(def: CreatureDef): THREE.Sprite {

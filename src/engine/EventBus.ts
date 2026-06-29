@@ -8,6 +8,8 @@ export type GameEvents = {
   "money:changed": { money: number };
   "upgrade:purchased": { key: string; level: number };
   "zone:unlocked": { id: string };
+  "fusion:done": Record<string, never>;
+  "arena:won": Record<string, never>;
   "save:written": { at: number };
   notify: { text: string; kind?: "info" | "good" | "warn" };
 };

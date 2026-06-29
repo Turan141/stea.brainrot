@@ -1,5 +1,7 @@
 import * as THREE from "three";
 import { CONFIG } from "../config.ts";
+import { Box } from "./types.ts";
+import { QUALITY } from "../engine/quality.ts";
 
 interface AssetProvider {
   instance(id: string, size: number): THREE.Object3D | null;
@@ -82,6 +84,12 @@ export class BaseDecor {
     return m;
   }
 
+  /** Solid props the player collides with (low ones are standable on top). */
+  readonly colliders: Box[] = [];
+  private addSolid(x: number, z: number, hx: number, hz: number, height: number, deckTop: number) {
+    this.colliders.push(new Box(x, deckTop + height / 2, z, hx, height / 2, hz));
+  }
+
   // ---- front entrance plaza: signs, stalls, benches, dummies, statues ----
 
   private frontPlaza(cx: number, front: number, deckTop: number) {
@@ -117,6 +125,7 @@ export class BaseDecor {
   }
 
   private bench(x: number, z: number, deckTop: number, rotY: number) {
+    this.addSolid(x, z, 1.3, 0.9, 1.2, deckTop); // low → jumpable
     const m = this.model("prop-bench", 2.6);
     if (m) {
       m.position.set(x, deckTop, z);
@@ -143,6 +152,7 @@ export class BaseDecor {
   }
 
   private marketStall(x: number, z: number, deckTop: number, color: number) {
+    this.addSolid(x, z, 2.0, 1.9, 3.6, deckTop); // tall → solid wall
     const m = this.model("prop-stall", 4.2);
     if (m) {
       m.position.set(x, deckTop, z);
@@ -208,6 +218,7 @@ export class BaseDecor {
   }
 
   private statue(x: number, z: number, deckTop: number, glowColor: number) {
+    this.addSolid(x, z, 1.3, 1.3, 4.2, deckTop); // tall → solid
     const g = new THREE.Group();
     const base = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.3, 0.5, 16), this.mats.stone);
     base.position.y = 0.25;
@@ -251,6 +262,7 @@ export class BaseDecor {
   }
 
   private brazier(x: number, z: number, deckTop: number) {
+    this.addSolid(x, z, 0.7, 0.7, 2.8, deckTop); // tall (don't stand in the fire)
     const g = new THREE.Group();
     const bowl = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.35, 0.5, 12), this.mats.metal);
     bowl.position.y = 1.4;
@@ -270,9 +282,11 @@ export class BaseDecor {
     g.position.set(x, deckTop, z);
     this.scene.add(g);
     this.animated.push({ obj: flame, kind: "flame", phase: x * 1.3 + z, base: 1 });
-    const light = new THREE.PointLight(0xff7a2a, 1.0, 20, 2);
-    light.position.set(x, deckTop + 2.2, z);
-    this.scene.add(light);
+    if (QUALITY.dynamicLights) {
+      const light = new THREE.PointLight(0xff7a2a, 1.0, 20, 2);
+      light.position.set(x, deckTop + 2.2, z);
+      this.scene.add(light);
+    }
   }
 
   // ---- topiary pots lining the avenue arms ----
@@ -295,6 +309,7 @@ export class BaseDecor {
   }
 
   private topiary(x: number, z: number, deckTop: number) {
+    this.addSolid(x, z, 1.0, 1.0, 1.8, deckTop);
     const m = this.model("prop-planter", 1.9);
     if (m) {
       m.position.set(x, deckTop, z);
@@ -323,8 +338,9 @@ export class BaseDecor {
 
   private groundClutter(cx: number, cz: number, front: number, back: number, deckTop: number) {
     const { halfWidth } = CONFIG.base;
+    const target = QUALITY.clutterCount;
     let placed = 0;
-    for (let tries = 0; tries < 260 && placed < 90; tries++) {
+    for (let tries = 0; tries < 260 && placed < target; tries++) {
       const x = cx + (Math.random() * 2 - 1) * (halfWidth - 6);
       const z = front + 3 + Math.random() * (back - front - 6);
       if (!this.clear(x, z, cx, cz)) continue;
@@ -382,6 +398,7 @@ export class BaseDecor {
   /** A lamp post; the 4th of each row gets a real point light for ambiance. */
   private lamp(x: number, z: number, deckTop: number, withLight: boolean): THREE.Vector3 {
     const H = 4.2;
+    this.addSolid(x, z, 0.35, 0.35, H, deckTop); // thin tall pole
     const m = this.model("prop-lamp", H);
     if (m) {
       m.position.set(x, deckTop, z);
@@ -406,7 +423,7 @@ export class BaseDecor {
       this.animated.push({ obj: lantern, kind: "lantern", phase: x * 0.7 + z, base: 1.4 });
     }
 
-    if (withLight) {
+    if (withLight && QUALITY.dynamicLights) {
       const light = new THREE.PointLight(0xffc36b, 0.9, 26, 2);
       light.position.set(x, deckTop + H, z);
       this.scene.add(light);
@@ -512,6 +529,7 @@ export class BaseDecor {
   // ---- decorative planter with foliage blobs ----
 
   private planter(x: number, z: number, deckTop: number) {
+    this.addSolid(x, z, 1.0, 1.0, 1.8, deckTop);
     const m = this.model("prop-planter", 2.1);
     if (m) {
       m.position.set(x, deckTop, z);
@@ -607,6 +625,7 @@ export class BaseDecor {
     g.position.set(x, deckTop, z);
     g.rotation.y = (x + z) % 1.5;
     this.scene.add(g);
+    this.addSolid(x, z, 2.4, 2.4, 2.0, deckTop); // the whole pile — low, jumpable
   }
 
   private crate(dx: number, dy: number, dz: number, s: number): THREE.Object3D {

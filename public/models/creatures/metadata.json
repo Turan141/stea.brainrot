@@ -256,7 +256,133 @@
       "role": "tank",
       "file": "models/creatures/refrigerator-robot__epic__tech__tank.glb",
       "thumb": "models/creatures/refrigerator-robot-15873.svg"
+    },
+    {
+      "id": "mushroom-toad-shaman-46576",
+      "name": "Mushroom Toad Shaman",
+      "archetype": "meme",
+      "rarity": "epic",
+      "income": 24,
+      "unlockLevel": 3,
+      "spawnWeight": 14,
+      "glow": 0.3,
+      "palette": [
+        "#d16a47",
+        "#9fe052"
+      ],
+      "scale": 1.33,
+      "rotationY": 4.604,
+      "element": "beast",
+      "role": "support",
+      "file": "models/creatures/mushroom-toad-shaman-46576.glb",
+      "thumb": "models/creatures/mushroom-toad-shaman-46576.svg",
+      "seed": 9446576
+    },
+    {
+      "id": "cactus-gunslinger-84355",
+      "name": "Cactus Gunslinger",
+      "archetype": "meme",
+      "rarity": "rare",
+      "income": 8,
+      "unlockLevel": 2,
+      "spawnWeight": 28,
+      "glow": 0.15,
+      "palette": [
+        "#4788d1",
+        "#e052cf"
+      ],
+      "scale": 1.2,
+      "rotationY": 4.181,
+      "element": "object",
+      "role": "assassin",
+      "file": "models/creatures/cactus-gunslinger-84355.glb",
+      "thumb": "models/creatures/cactus-gunslinger-84355.svg",
+      "seed": 947984355
+    },
+    {
+      "id": "lava-lamp-jellyfish-50006",
+      "name": "Lava Lamp Jellyfish",
+      "archetype": "meme",
+      "rarity": "epic",
+      "income": 23,
+      "unlockLevel": 3,
+      "spawnWeight": 14,
+      "glow": 0.3,
+      "palette": [
+        "#88d147",
+        "#52e0cb"
+      ],
+      "scale": 0.8,
+      "rotationY": 2.563,
+      "element": "cosmic",
+      "role": "trickster",
+      "file": "models/creatures/lava-lamp-jellyfish-50006.glb",
+      "thumb": "models/creatures/lava-lamp-jellyfish-50006.svg",
+      "seed": 874550006
+    },
+    {
+      "id": "vending-machine-golem-17545",
+      "name": "Vending Machine Golem",
+      "archetype": "meme",
+      "rarity": "epic",
+      "income": 11,
+      "unlockLevel": 3,
+      "spawnWeight": 14,
+      "glow": 0.3,
+      "palette": [
+        "#d14a47",
+        "#a3e052"
+      ],
+      "scale": 1.44,
+      "rotationY": 4.239,
+      "element": "tech",
+      "role": "tank",
+      "file": "models/creatures/vending-machine-golem-17545.glb",
+      "thumb": "models/creatures/vending-machine-golem-17545.svg",
+      "seed": 46017545
+    },
+    {
+      "id": "origami-crane-ronin-47535",
+      "name": "Origami Crane Ronin",
+      "archetype": "meme",
+      "rarity": "rare",
+      "income": 4,
+      "unlockLevel": 2,
+      "spawnWeight": 28,
+      "glow": 0.15,
+      "palette": [
+        "#47d17e",
+        "#52cbe0"
+      ],
+      "scale": 1.25,
+      "rotationY": 3.075,
+      "element": "object",
+      "role": "fighter",
+      "file": "models/creatures/origami-crane-ronin-47535.glb",
+      "thumb": "models/creatures/origami-crane-ronin-47535.svg",
+      "seed": 716547535
+    },
+    {
+      "id": "cosmic-donut-cat-21683",
+      "name": "Cosmic Donut Cat",
+      "archetype": "meme",
+      "rarity": "legendary",
+      "income": 54,
+      "unlockLevel": 4,
+      "spawnWeight": 6,
+      "glow": 0.5,
+      "palette": [
+        "#d14795",
+        "#e08e52"
+      ],
+      "scale": 1.49,
+      "rotationY": 4.617,
+      "element": "cosmic",
+      "role": "assassin",
+      "file": "models/creatures/cosmic-donut-cat-21683.glb",
+      "thumb": "models/creatures/cosmic-donut-cat-21683.svg",
+      "seed": 18821683
     }
   ],
-  "generatedAt": "2026-06-29T08:41:49.529Z"
+  "generatedAt": "2026-06-29T11:14:30.304Z"
 }
