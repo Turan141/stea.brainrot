@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { Engine } from "./engine/Engine.ts";
+import { haptics } from "./engine/haptics.ts";
 import { World } from "./world/World.ts";
 import { SceneAssets } from "./world/SceneAssets.ts";
 import { Player } from "./player/Player.ts";
@@ -122,6 +123,14 @@ export class Game {
     );
     this.buildButtons(ui);
     if (isTouchDevice()) new TouchControls(this.engine.input, ui);
+
+    // Haptic feedback on outcomes (subtle; no-ops where unsupported).
+    this.engine.bus.on("notify", ({ kind }) => {
+      if (kind === "good") haptics.success();
+      else if (kind === "warn") haptics.warn();
+      else haptics.bump();
+    });
+    this.engine.bus.on("creature:captured", () => haptics.bump());
 
     // first-session onboarding (objective banner, persisted progress)
     const objectives = new Objectives(ui);
@@ -288,6 +297,38 @@ export class Game {
     if (this.autosave <= 0) {
       this.autosave = CONFIG.base.autosaveInterval;
       this.persist();
+    }
+
+    this.updatePerf(dt);
+  }
+
+  // --- temporary perf overlay (diagnostics) ---
+  private perfEl: HTMLElement | null = null;
+  private perfAcc = 0;
+  private perfFrames = 0;
+  private updatePerf(dt: number) {
+    if (!this.perfEl) {
+      const el = document.createElement("div");
+      el.id = "perf";
+      el.style.cssText =
+        "position:fixed;left:50%;top:46px;transform:translateX(-50%);z-index:50;font:11px monospace;color:#7CFC9A;background:rgba(0,0,0,.55);padding:3px 7px;border-radius:6px;pointer-events:none;white-space:pre;text-align:center";
+      document.body.appendChild(el);
+      this.perfEl = el;
+    }
+    this.perfAcc += dt;
+    this.perfFrames++;
+    if (this.perfAcc >= 0.5) {
+      const fps = this.perfFrames / this.perfAcc;
+      const info = this.engine.renderer.gl.info;
+      const gl = this.engine.renderer.gl;
+      const sz = new THREE.Vector2();
+      gl.getSize(sz);
+      const pr = gl.getPixelRatio();
+      this.perfEl.textContent =
+        `${fps.toFixed(0)} fps  calls:${info.render.calls}  tris:${(info.render.triangles / 1000).toFixed(0)}k\n` +
+        `${(sz.x * pr) | 0}x${(sz.y * pr) | 0} @${pr}  geom:${info.memory.geometries} tex:${info.memory.textures}`;
+      this.perfAcc = 0;
+      this.perfFrames = 0;
     }
   }
 

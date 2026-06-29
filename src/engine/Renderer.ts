@@ -12,15 +12,17 @@ export class Renderer {
   constructor(canvas: HTMLCanvasElement) {
     this.gl = new THREE.WebGLRenderer({ canvas, antialias: QUALITY.antialias, powerPreference: "high-performance" });
     this.gl.setPixelRatio(Math.min(window.devicePixelRatio, QUALITY.pixelRatioCap));
-    this.gl.shadowMap.enabled = true;
+    this.gl.shadowMap.enabled = QUALITY.shadows;
     this.gl.shadowMap.type = QUALITY.softShadows ? THREE.PCFSoftShadowMap : THREE.PCFShadowMap;
+    // Throttle the shadow pass when shadows are on but we want to render them less often.
+    this.gl.shadowMap.autoUpdate = !QUALITY.shadows || QUALITY.shadowEveryN <= 1;
     this.gl.outputColorSpace = THREE.SRGBColorSpace;
 
     this.camera = new THREE.PerspectiveCamera(
       CONFIG.render.fov,
       window.innerWidth / window.innerHeight,
       CONFIG.render.near,
-      CONFIG.render.far
+      QUALITY.drawDistance
     );
 
     this.resize();
@@ -35,7 +37,14 @@ export class Renderer {
     this.camera.updateProjectionMatrix();
   };
 
+  private frame = 0;
+
   render(scene: THREE.Scene) {
+    // When auto-update is off, flag the shadow map to re-render on the chosen cadence.
+    if (!this.gl.shadowMap.autoUpdate) {
+      this.gl.shadowMap.needsUpdate = this.frame % QUALITY.shadowEveryN === 0;
+      this.frame++;
+    }
     this.gl.render(scene, this.camera);
   }
 }

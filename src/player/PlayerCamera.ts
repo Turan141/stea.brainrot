@@ -12,7 +12,7 @@ export class PlayerCamera {
   private yaw = Math.PI;
   private targetYaw = Math.PI;
   private focus = new THREE.Vector3();
-  private dragging = false;
+  private lookId: number | null = null; // pointer driving the look-drag (touch-safe)
   private lastX = 0;
   private obstacles: THREE.Object3D[] = [];
   private raycaster = new THREE.Raycaster();
@@ -20,20 +20,22 @@ export class PlayerCamera {
   constructor(private camera: THREE.PerspectiveCamera) {
     window.addEventListener("pointerdown", this.onDown);
     window.addEventListener("pointerup", this.onUp);
+    window.addEventListener("pointercancel", this.onUp);
     window.addEventListener("pointermove", this.onMove);
   }
 
   private onDown = (e: PointerEvent) => {
-    // ignore clicks on UI overlay
+    // ignore clicks on UI overlay (joystick/buttons live inside #ui)
     if ((e.target as HTMLElement)?.closest?.("#ui")) return;
-    this.dragging = true;
+    if (this.lookId !== null) return; // already tracking a look-drag finger
+    this.lookId = e.pointerId;
     this.lastX = e.clientX;
   };
-  private onUp = () => {
-    this.dragging = false;
+  private onUp = (e: PointerEvent) => {
+    if (e.pointerId === this.lookId) this.lookId = null;
   };
   private onMove = (e: PointerEvent) => {
-    if (!this.dragging) return;
+    if (e.pointerId !== this.lookId) return; // only the look finger rotates the camera
     const dx = e.clientX - this.lastX;
     this.lastX = e.clientX;
     this.targetYaw -= dx * 0.005;

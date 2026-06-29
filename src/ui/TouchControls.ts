@@ -1,4 +1,5 @@
 import type { Input } from "../engine/Input.ts";
+import { haptics } from "../engine/haptics.ts";
 
 /** True on phones/tablets (coarse pointer or touch points present). */
 export function isTouchDevice(): boolean {
@@ -93,6 +94,7 @@ export class TouchControls {
         input.setTouchAction(d.action, true);
         b.classList.add("active");
         b.setPointerCapture(e.pointerId);
+        haptics.tap();
         e.preventDefault();
       };
       const up = () => {

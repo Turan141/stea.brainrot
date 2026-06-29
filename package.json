@@ -7,6 +7,9 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
+    "android:sync": "npm run build && cap sync android",
+    "android:open": "cap open android",
+    "android:apk": "npm run build && cap sync android && cd android && gradlew.bat assembleDebug",
     "generate-creatures": "node scripts/generate-creatures.mjs",
     "generate-assets": "node scripts/generate-assets.mjs",
     "generate-scene": "node scripts/generate-scene.mjs",
@@ -14,9 +17,13 @@
     "compress-glb": "node scripts/compress-glb.mjs"
   },
   "dependencies": {
+    "@capacitor/core": "^6.2.1",
     "three": "^0.169.0"
   },
   "devDependencies": {
+    "@capacitor/android": "^6.2.1",
+    "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "^6.2.1",
     "@gltf-transform/core": "^4.4.0",
     "@gltf-transform/functions": "^4.4.0",
     "@types/three": "^0.169.0",

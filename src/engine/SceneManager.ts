@@ -11,7 +11,7 @@ export class SceneManager {
 
   constructor() {
     this.scene = new THREE.Scene();
-    this.scene.fog = new THREE.Fog(0x9fc4f0, 120, 360);
+    this.scene.fog = new THREE.Fog(0x9fc4f0, Math.min(120, QUALITY.fogFar * 0.6), QUALITY.fogFar);
     this.addSky();
 
     // Warm-neutral sky fill (a strong blue hemi was washing the floors grey).
@@ -20,9 +20,9 @@ export class SceneManager {
 
     this.sun = new THREE.DirectionalLight(0xfff2d9, 1.5);
     this.sun.position.set(40, 70, 30);
-    this.sun.castShadow = true;
+    this.sun.castShadow = QUALITY.shadows;
     this.sun.shadow.mapSize.set(QUALITY.shadowMapSize, QUALITY.shadowMapSize);
-    const d = 80;
+    const d = QUALITY.shadowFrustum;
     const cam = this.sun.shadow.camera;
     cam.left = -d;
     cam.right = d;
