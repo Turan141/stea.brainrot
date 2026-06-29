@@ -56,7 +56,10 @@
       "rotationY": 5.91,
       "file": "models/creatures/ceiling-fan-robot-53840.glb",
       "thumb": "models/creatures/ceiling-fan-robot-53840.svg",
-      "seed": 649553840
+      "seed": 649553840,
+      "previewTaskId": "019f0fb2-edb5-7e8a-be35-cec46f3aa7b0",
+      "refineTaskId": "019f12a3-5999-7cb5-b546-d814069b9a42",
+      "textured": true
     },
     {
       "id": "traffic-cone-duck-43730",
@@ -75,7 +78,10 @@
       "rotationY": 0.059,
       "file": "models/creatures/traffic-cone-duck-43730.glb",
       "thumb": "models/creatures/traffic-cone-duck-43730.svg",
-      "seed": 675143730
+      "seed": 675143730,
+      "previewTaskId": "019f0fb4-59fd-7ec7-88ab-7d403961c151",
+      "refineTaskId": "019f12a3-5994-7f6e-b041-b005b3bc5dea",
+      "textured": true
     },
     {
       "id": "narwhal-crab-14595",
@@ -94,7 +100,10 @@
       "rotationY": 6.219,
       "file": "models/creatures/narwhal-crab-14595.glb",
       "thumb": "models/creatures/narwhal-crab-14595.svg",
-      "seed": 991014595
+      "seed": 991014595,
+      "previewTaskId": "019f0fb5-83da-7f08-a192-467eba816955",
+      "refineTaskId": "019f12a3-5992-7f6d-bf39-239f0a7da64a",
+      "textured": true
     },
     {
       "id": "toaster-octopus-4064",
@@ -113,7 +122,10 @@
       "rotationY": 0.921,
       "file": "models/creatures/toaster-octopus-4064.glb",
       "thumb": "models/creatures/toaster-octopus-4064.svg",
-      "seed": 968304064
+      "seed": 968304064,
+      "previewTaskId": "019f1000-a7d8-7378-9ffc-be40abcfe032",
+      "refineTaskId": "019f12a3-599a-7cb6-bd8b-a4341e9e60e8",
+      "textured": true
     },
     {
       "id": "traffic-cone-corgi-8246",
@@ -132,7 +144,10 @@
       "rotationY": 0.597,
       "file": "models/creatures/traffic-cone-corgi-8246.glb",
       "thumb": "models/creatures/traffic-cone-corgi-8246.svg",
-      "seed": 799508246
+      "seed": 799508246,
+      "previewTaskId": "019f1002-1407-73d1-8a61-eeeb84e1717a",
+      "refineTaskId": "019f12a3-5995-7cb4-8d86-dae062665c09",
+      "textured": true
     },
     {
       "id": "washing-machine-narwhal-22130",
@@ -151,7 +166,10 @@
       "rotationY": 1.113,
       "file": "models/creatures/washing-machine-narwhal-22130.glb",
       "thumb": "models/creatures/washing-machine-narwhal-22130.svg",
-      "seed": 746522130
+      "seed": 746522130,
+      "previewTaskId": "019f1003-11db-700f-b7e0-c453dc5cbe75",
+      "refineTaskId": "019f12a3-5994-7cb3-9747-a6575a452338",
+      "textured": true
     },
     {
       "id": "cuckoo-clock-axolotl-92632",
@@ -170,7 +188,10 @@
       "rotationY": 2.9,
       "file": "models/creatures/cuckoo-clock-axolotl-92632.glb",
       "thumb": "models/creatures/cuckoo-clock-axolotl-92632.svg",
-      "seed": 10592632
+      "seed": 10592632,
+      "previewTaskId": "019f1004-7cdc-7082-b543-04dcd20d0663",
+      "refineTaskId": "019f12a3-599f-7b9a-935e-7649dc010208",
+      "textured": true
     },
     {
       "id": "fire-hydrant-dinosaur-36027",
@@ -189,8 +210,53 @@
       "rotationY": 1.088,
       "file": "models/creatures/fire-hydrant-dinosaur-36027.glb",
       "thumb": "models/creatures/fire-hydrant-dinosaur-36027.svg",
-      "seed": 573336027
+      "seed": 573336027,
+      "previewTaskId": "019f1005-a636-7579-a187-64f3896df328",
+      "refineTaskId": "019f12a3-5991-7b67-8adb-00701122cc94",
+      "textured": true
+    },
+    {
+      "id": "chicken-tv-35130",
+      "seed": 3831735130,
+      "name": "Chicken Tv",
+      "archetype": "meme",
+      "rarity": "rare",
+      "income": 5,
+      "unlockLevel": 2,
+      "spawnWeight": 28,
+      "glow": 0.15,
+      "palette": [
+        "#4778d1",
+        "#e052d5"
+      ],
+      "scale": 1,
+      "rotationY": 0,
+      "element": "tech",
+      "role": "trickster",
+      "file": "models/creatures/chicken-tv__rare__tech__trickster.glb",
+      "thumb": "models/creatures/chicken-tv-35130.svg"
+    },
+    {
+      "id": "refrigerator-robot-15873",
+      "seed": 3368815873,
+      "name": "Refrigerator Robot",
+      "archetype": "meme",
+      "rarity": "epic",
+      "income": 17,
+      "unlockLevel": 3,
+      "spawnWeight": 14,
+      "glow": 0.3,
+      "palette": [
+        "#59d147",
+        "#5281e0"
+      ],
+      "scale": 1,
+      "rotationY": 0,
+      "element": "tech",
+      "role": "tank",
+      "file": "models/creatures/refrigerator-robot__epic__tech__tank.glb",
+      "thumb": "models/creatures/refrigerator-robot-15873.svg"
     }
   ],
-  "generatedAt": "2026-06-28T20:58:40.929Z"
+  "generatedAt": "2026-06-29T08:41:49.529Z"
 }

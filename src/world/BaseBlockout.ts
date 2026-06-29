@@ -30,19 +30,28 @@ function layoutBuildings(): BuildingDef[] {
   const backZ = centerZ + halfDepth;
   const frontZ = centerZ - halfDepth;
   return [
-    { id: "castle", label: "🏰 Castle (HQ)", x: centerX - (halfWidth - 16), z: backZ - 9, w: 24, d: 14, h: 18, color: 0x9098a6, roof: "towers" },
-    { id: "arena", label: "⚔️ PvP Arena Guild", x: centerX + (halfWidth - 14), z: backZ - 9, w: 20, d: 14, h: 13, color: 0xc0506a, roof: "flat" },
-    { id: "store-a", label: "🏠 Storage", x: centerX - 20, z: backZ - 8, w: 14, d: 9, h: 8, color: 0x707a92, roof: "flat" },
-    { id: "store-b", label: "🏠 Workshop", x: centerX + 20, z: backZ - 8, w: 14, d: 9, h: 8, color: 0x6a7488, roof: "flat" },
-    { id: "fusion", label: "⚗️ Fusion Lab", x: centerX - (halfWidth - 6), z: centerZ - 4, w: 11, d: 12, h: 9, color: 0xa970ff, roof: "dome" },
-    { id: "warehouse", label: "🏭 Warehouse", x: centerX + (halfWidth - 6), z: centerZ - 4, w: 11, d: 12, h: 8, color: 0x6f7891, roof: "flat" },
-    { id: "shop", label: "🛒 Creature Shop", x: centerX - 30, z: frontZ + 7, w: 8, d: 6, h: 4.5, color: 0x33c2b0, roof: "awning" },
-    { id: "upgrades", label: "🔧 Upgrades Stall", x: centerX + 30, z: frontZ + 7, w: 8, d: 6, h: 4.5, color: 0xffa53c, roof: "awning" },
+    { id: "castle", label: "🏰 Castle (HQ)", x: centerX - (halfWidth - 13), z: backZ - 8, w: 15, d: 10, h: 11, color: 0x9098a6, roof: "towers" },
+    { id: "arena", label: "⚔️ PvP Arena Guild", x: centerX + (halfWidth - 12), z: backZ - 8, w: 13, d: 9, h: 9, color: 0xc0506a, roof: "flat" },
+    { id: "store-a", label: "🏠 Storage", x: centerX - 18, z: backZ - 6, w: 9, d: 6, h: 5.5, color: 0x707a92, roof: "flat" },
+    { id: "store-b", label: "🏠 Workshop", x: centerX + 18, z: backZ - 6, w: 9, d: 6, h: 5.5, color: 0x6a7488, roof: "flat" },
+    { id: "fusion", label: "⚗️ Fusion Lab", x: centerX - (halfWidth - 6), z: centerZ - 4, w: 8, d: 8.5, h: 7, color: 0xa970ff, roof: "dome" },
+    { id: "warehouse", label: "🏭 Warehouse", x: centerX + (halfWidth - 6), z: centerZ - 4, w: 8, d: 8.5, h: 6.5, color: 0x6f7891, roof: "flat" },
+    { id: "shop", label: "🛒 Creature Shop", x: centerX - 30, z: frontZ + 7, w: 5.5, d: 4.5, h: 4, color: 0x33c2b0, roof: "awning" },
+    { id: "upgrades", label: "🔧 Upgrades Stall", x: centerX + 30, z: frontZ + 7, w: 5.5, d: 4.5, h: 4, color: 0xffa53c, roof: "awning" },
   ];
 }
 
 interface AssetSource {
   instance(id: string, targetSize: number): THREE.Object3D | null;
+  has(id: string): boolean;
+  instanceRaw(id: string): THREE.Object3D | null;
+}
+
+interface WallRun {
+  cx: number;
+  cz: number;
+  len: number;
+  horizontal: boolean; // run extends along X (true) or Z (false)
 }
 
 export class BaseBlockout {
@@ -51,6 +60,8 @@ export class BaseBlockout {
 
   private buildingGroups = new Map<string, { group: THREE.Group; def: BuildingDef }>();
   private gateGroup = new THREE.Group();
+  private wallGroup = new THREE.Group();
+  private wallRuns: WallRun[] = [];
 
   constructor(private scene: THREE.Scene) {
     this.buildWalls();
@@ -85,12 +96,14 @@ export class BaseBlockout {
       const size = Math.max(entry.def.w, entry.def.d, entry.def.h);
       this.swapBuilding(buildingId, assets.instance(assetId, size), this.faceCenter(entry.def));
     }
-    const gate = assets.instance("base-gate", 16);
+    const gate = assets.instance("base-gate", 12);
     if (gate) {
       this.gateGroup.clear();
       gate.rotation.y = 0;
       this.gateGroup.add(gate);
     }
+
+    if (assets.has("base-wall")) this.tileWalls(assets);
   }
 
   /** World position of a building (for proximity interactions). */
@@ -119,11 +132,13 @@ export class BaseBlockout {
     entry.group.add(model);
   }
 
+  private static readonly WALL_H = 3.4;
+
   private buildWalls() {
     const { centerX, centerZ, halfWidth, halfDepth } = CONFIG.base;
     const wallMat = new THREE.MeshStandardMaterial({ color: 0x586073, roughness: 0.95 });
     const capMat = new THREE.MeshStandardMaterial({ color: 0x707a90, roughness: 0.9 });
-    const H = 3.4;
+    const H = BaseBlockout.WALL_H;
     const T = 0.8;
     const y = this.deckTop + H / 2;
 
@@ -131,12 +146,12 @@ export class BaseBlockout {
       const wall = new THREE.Mesh(new THREE.BoxGeometry(w, H, d), wallMat);
       wall.position.set(x, y, z);
       wall.castShadow = wall.receiveShadow = true;
-      this.scene.add(wall);
-      this.obstacles.push(wall);
+      this.wallGroup.add(wall);
       // lighter coping cap
       const cap = new THREE.Mesh(new THREE.BoxGeometry(w + 0.2, 0.3, d + 0.2), capMat);
       cap.position.set(x, this.deckTop + H + 0.15, z);
-      this.scene.add(cap);
+      this.wallGroup.add(cap);
+      this.wallRuns.push({ cx: x, cz: z, len: Math.max(w, d), horizontal: w >= d });
     };
 
     const backZ = centerZ + halfDepth;
@@ -150,6 +165,47 @@ export class BaseBlockout {
     const frontHalfLen = halfWidth - gateHalf;
     seg(-(gateHalf + frontHalfLen / 2), frontZ, frontHalfLen, T);
     seg(gateHalf + frontHalfLen / 2, frontZ, frontHalfLen, T);
+
+    this.scene.add(this.wallGroup);
+    this.obstacles.push(this.wallGroup);
+  }
+
+  /**
+   * Replace the primitive wall boxes with tiled copies of the generated wall
+   * segment, sized to the wall height and stretched to fill each run exactly.
+   */
+  private tileWalls(assets: AssetSource) {
+    const probe = assets.instanceRaw("base-wall");
+    if (!probe) return;
+    const size = new THREE.Box3().setFromObject(probe).getSize(new THREE.Vector3());
+    const nativeLen = size.x || 1; // long axis is X (see asset inspection)
+    const nativeH = size.y || 1;
+    const s = BaseBlockout.WALL_H / nativeH; // uniform scale to reach wall height
+    const segLen = nativeLen * s;
+
+    this.wallGroup.clear();
+    for (const run of this.wallRuns) {
+      const n = Math.max(1, Math.round(run.len / segLen));
+      const fill = run.len / n; // exact per-segment length to tile the run seamlessly
+      const stretch = fill / segLen;
+      for (let i = 0; i < n; i++) {
+        const piece = assets.instanceRaw("base-wall");
+        if (!piece) break;
+        const off = -run.len / 2 + fill * (i + 0.5);
+        piece.scale.set(s * stretch, s, s);
+        if (run.horizontal) {
+          piece.position.set(run.cx + off, this.deckTop, run.cz);
+        } else {
+          piece.rotation.y = Math.PI / 2; // long axis (X) now points along Z
+          piece.position.set(run.cx, this.deckTop, run.cz + off);
+        }
+        piece.traverse((o) => {
+          const m = o as THREE.Mesh;
+          if (m.isMesh) m.castShadow = m.receiveShadow = true;
+        });
+        this.wallGroup.add(piece);
+      }
+    }
   }
 
   private buildGate() {

@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { CONFIG } from "../config.ts";
 import { KinematicBody } from "../physics/KinematicBody.ts";
+import { damp } from "../utils/math.ts";
 
 /** Anything the player can pick up and carry to the base. */
 export interface Carryable {
@@ -35,12 +36,22 @@ export class Player {
   dashCooldown = 0;
   facing = 0; // yaw
 
+  // The visual sits inside `rig` (a child of mesh), so we can apply a
+  // procedural walk (bob / sway / lean) without disturbing the body transform.
+  private readonly rig: THREE.Group;
   private placeholder: THREE.Object3D[] = [];
+  private walkPhase = 0;
+  private idleT = 0;
+  private animBob = 0;
+  private animSway = 0;
+  private animLean = 0;
 
   constructor(scene: THREE.Scene) {
     const { radius, height, color } = CONFIG.player;
     this.body = new KinematicBody(radius, height);
     this.mesh = new THREE.Group();
+    this.rig = new THREE.Group();
+    this.mesh.add(this.rig);
 
     const bodyMesh = new THREE.Mesh(
       new THREE.CapsuleGeometry(radius, height - radius * 2, 8, 16),
@@ -48,7 +59,7 @@ export class Player {
     );
     bodyMesh.position.y = height / 2;
     bodyMesh.castShadow = true;
-    this.mesh.add(bodyMesh);
+    this.rig.add(bodyMesh);
 
     // facing marker
     const nose = new THREE.Mesh(
@@ -57,7 +68,7 @@ export class Player {
     );
     nose.rotation.x = Math.PI / 2;
     nose.position.set(0, height * 0.62, radius + 0.05);
-    this.mesh.add(nose);
+    this.rig.add(nose);
     this.placeholder = [bodyMesh, nose];
 
     scene.add(this.mesh);
@@ -65,13 +76,13 @@ export class Player {
 
   /** Swap the placeholder capsule for a loaded character model. */
   setModel(model: THREE.Object3D) {
-    for (const o of this.placeholder) this.mesh.remove(o);
+    for (const o of this.placeholder) this.rig.remove(o);
     this.placeholder = [];
     model.traverse((o) => {
       const m = o as THREE.Mesh;
       if (m.isMesh) m.castShadow = true;
     });
-    this.mesh.add(model);
+    this.rig.add(model);
   }
 
   get position(): THREE.Vector3 {
@@ -112,9 +123,10 @@ export class Player {
   }
 
   /** Sync mesh transform to body + stack carried items above the head. */
-  syncVisual() {
+  syncVisual(dt = 0) {
     this.mesh.position.copy(this.body.position);
     this.mesh.rotation.y = this.facing;
+    this.animateLocomotion(dt);
 
     const gap = 0.7;
     const startY = CONFIG.player.height + 0.4;
@@ -123,5 +135,43 @@ export class Player {
       m.position.set(this.body.position.x, this.body.position.y + startY + i * gap, this.body.position.z);
       m.rotation.y += 0.04;
     }
+  }
+
+  /**
+   * Procedural walk cycle applied to the rig (works on any static model): a
+   * speed-scaled stride drives a vertical bob, a left/right roll and a forward
+   * lean; when idle it eases to a gentle breathing bob. All targets are damped
+   * so starts/stops blend smoothly.
+   */
+  private animateLocomotion(dt: number) {
+    if (dt <= 0) return;
+    const hv = Math.hypot(this.body.velocity.x, this.body.velocity.z);
+    const k = Math.min(hv / this.walkSpeed, 1.4); // 0..~1.4 (sprint overshoots)
+    const moving = k > 0.06 && this.body.grounded;
+
+    let bob = 0;
+    let sway = 0;
+    let lean = 0;
+    if (moving) {
+      // cadence rises with speed; vertical bob is double-frequency (two per stride)
+      this.walkPhase += dt * (5 + hv * 1.1);
+      bob = 0.075 * k * Math.abs(Math.sin(this.walkPhase));
+      sway = 0.11 * k * Math.sin(this.walkPhase);
+      lean = 0.16 * k + 0.04 * k * Math.sin(this.walkPhase * 2);
+    } else if (!this.body.grounded) {
+      lean = 0.12; // slight forward tuck while airborne
+    } else {
+      this.idleT += dt;
+      bob = 0.018 * Math.sin(this.idleT * 2.2); // breathing
+    }
+
+    const s = damp(11, dt);
+    this.animBob += (bob - this.animBob) * s;
+    this.animSway += (sway - this.animSway) * s;
+    this.animLean += (lean - this.animLean) * s;
+
+    this.rig.position.y = this.animBob;
+    this.rig.rotation.z = this.animSway;
+    this.rig.rotation.x = this.animLean;
   }
 }

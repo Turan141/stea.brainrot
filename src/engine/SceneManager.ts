@@ -14,7 +14,8 @@ export class SceneManager {
     this.scene.fog = new THREE.Fog(0x9fc4f0, 120, 360);
     this.addSky();
 
-    const hemi = new THREE.HemisphereLight(0xbfe0ff, 0x55617a, 0.9);
+    // Warm-neutral sky fill (a strong blue hemi was washing the floors grey).
+    const hemi = new THREE.HemisphereLight(0xf3ecdc, 0x6b6052, 0.85);
     this.scene.add(hemi);
 
     this.sun = new THREE.DirectionalLight(0xfff2d9, 1.5);

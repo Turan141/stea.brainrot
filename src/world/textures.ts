@@ -57,38 +57,57 @@ export function grassTexture(repeat = 8): THREE.CanvasTexture {
   return wrap(c, repeat);
 }
 
-/** Light stone-plaza tiles with grout lines and subtle per-tile shading. */
+/**
+ * Warm cut-stone plaza floor: large limestone slabs laid in a running-bond
+ * pattern (rows offset by half a slab) with thin grout and gentle per-slab tone
+ * + veining. Calm and premium — no busy mosaic, no bright accents. Tileable.
+ */
 export function plazaTexture(): THREE.CanvasTexture {
   const S = 512;
   const [c, ctx] = canvas(S);
-  ctx.fillStyle = "#3a4358"; // grout / gap color
+  ctx.fillStyle = "#5a4d3b"; // warm grout
   ctx.fillRect(0, 0, S, S);
 
-  const tiles = 4;
-  const step = S / tiles;
-  const gap = 6;
-  for (let ty = 0; ty < tiles; ty++) {
-    for (let tx = 0; tx < tiles; tx++) {
-      const x = tx * step + gap / 2;
-      const y = ty * step + gap / 2;
-      const w = step - gap;
-      const h = step - gap;
-      const shade = 0.92 + Math.random() * 0.14;
-      // tile base with a slight diagonal sheen
-      const g = ctx.createLinearGradient(x, y, x + w, y + h);
-      g.addColorStop(0, shadeHex(0x9aa3b4, shade));
-      g.addColorStop(1, shadeHex(0x7f8aa0, shade));
-      ctx.fillStyle = g;
-      ctx.fillRect(x, y, w, h);
-      // faint speckle on the stone
-      for (let s = 0; s < 60; s++) {
-        ctx.fillStyle = Math.random() > 0.5 ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.06)";
-        ctx.fillRect(x + Math.random() * w, y + Math.random() * h, 2, 2);
-      }
-      // soft inner bevel highlight
-      ctx.strokeStyle = "rgba(255,255,255,0.10)";
-      ctx.lineWidth = 1.5;
-      ctx.strokeRect(x + 1, y + 1, w - 2, h - 2);
+  const cols = 3;
+  const rows = 4;
+  const sw = S / cols;
+  const sh = S / rows;
+  const gap = 4;
+  const stone = [0xd3c19a, 0xddcca6, 0xc7b48b, 0xe5d6b2];
+
+  const slab = (x: number, y: number, w: number, h: number, col: number) => {
+    const shade = 0.94 + Math.random() * 0.1;
+    const g = ctx.createLinearGradient(x, y, x + w, y + h);
+    g.addColorStop(0, shadeHex(col, shade + 0.05));
+    g.addColorStop(1, shadeHex(col, shade - 0.05));
+    ctx.fillStyle = g;
+    ctx.fillRect(x, y, w, h);
+    // subtle veining
+    ctx.strokeStyle = "rgba(120,100,70,0.15)";
+    ctx.lineWidth = 1;
+    for (let v = 0; v < 2; v++) {
+      ctx.beginPath();
+      ctx.moveTo(x + Math.random() * w, y);
+      ctx.lineTo(x + Math.random() * w, y + h);
+      ctx.stroke();
+    }
+    // fine grain
+    for (let s = 0; s < 40; s++) {
+      ctx.fillStyle = Math.random() > 0.5 ? "rgba(255,255,255,0.05)" : "rgba(60,45,25,0.06)";
+      ctx.fillRect(x + Math.random() * w, y + Math.random() * h, 2, 2);
+    }
+    // soft top-edge highlight
+    ctx.strokeStyle = "rgba(255,255,255,0.1)";
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(x + 1, y + 1, w - 2, h - 2);
+  };
+
+  for (let ry = 0; ry < rows; ry++) {
+    const offset = (ry % 2) * (sw / 2); // running bond
+    for (let cx = -1; cx <= cols; cx++) {
+      const x = cx * sw + offset + gap / 2;
+      const y = ry * sh + gap / 2;
+      slab(x, y, sw - gap, sh - gap, stone[(cx + ry * 2 + 8) % stone.length]);
     }
   }
   return wrap(c, 1);

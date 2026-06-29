@@ -163,3 +163,37 @@
   background: #2c3a5e; border-radius: 6px; padding: 2px 8px; font-weight: 800;
   border: 1px solid #4f6196; margin-left: 2px;
 }
+
+/* ---- Mobile touch controls ---- */
+#touch { position: fixed; inset: 0; z-index: 14; pointer-events: none; }
+#touch .tc-stick, #touch .tc-buttons { pointer-events: auto; }
+
+.tc-stick {
+  position: fixed; left: 26px; bottom: 26px; width: 132px; height: 132px;
+  border-radius: 50%; background: rgba(16,22,40,.32);
+  border: 2px solid rgba(120,150,210,.5); touch-action: none;
+}
+.tc-knob {
+  position: absolute; left: 50%; top: 50%; width: 56px; height: 56px;
+  transform: translate(-50%,-50%); border-radius: 50%;
+  background: rgba(120,160,240,.72); border: 2px solid #cfe0ff;
+  box-shadow: 0 2px 8px rgba(0,0,0,.4);
+}
+.tc-buttons {
+  position: fixed; right: 22px; bottom: 26px;
+  display: grid; grid-template-columns: repeat(2, 66px); gap: 12px;
+  touch-action: none;
+}
+.tc-btn {
+  width: 66px; height: 66px; border-radius: 50%;
+  background: rgba(16,22,40,.55); border: 2px solid #4f6196;
+  color: #eaf0ff; font: 800 24px/1 system-ui, sans-serif;
+  display: flex; align-items: center; justify-content: center;
+  user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent;
+  touch-action: none; padding: 0;
+}
+.tc-btn.active { background: rgba(79,143,255,.6); transform: scale(.94); }
+.tc-jump { grid-column: 1 / -1; width: 100%; border-radius: 33px; background: rgba(79,143,255,.42); }
+
+/* on phones, shrink the top toolbar so it doesn't crowd the HUD */
+body.is-touch #ui-buttons { transform: scale(.9); transform-origin: top right; }

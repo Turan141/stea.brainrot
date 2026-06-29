@@ -7,6 +7,16 @@ import { RARITY_COLOR, type CreatureDef, type CreatureManifest, type Element, ty
 
 const MANIFEST_URL = "models/creatures/metadata.json";
 
+// Small, intentional size bump by rarity (rarer = a touch bigger). Tight range
+// so creatures still read as a consistent set.
+const RARITY_SCALE: Record<Rarity, number> = {
+  common: 1.0,
+  rare: 1.06,
+  epic: 1.12,
+  legendary: 1.2,
+  mythic: 1.28,
+};
+
 /**
  * Auto-loads every creature described in the generated manifest. No hardcoded
  * creature list — drop GLBs + metadata.json into /public/models/creatures and
@@ -95,7 +105,10 @@ export class CreatureLibrary {
     } else {
       inst = template.clone(true);
     }
-    inst.scale.setScalar(def.scale);
+    // Uniform size: the model is already height-normalized, so every creature
+    // reads at the same scale (def.scale held random gen-time values that made
+    // sizes inconsistent). Rarity gives a small, *intentional* size bump.
+    inst.scale.setScalar(RARITY_SCALE[def.rarity] ?? 1);
     inst.rotation.y = def.rotationY;
     return inst;
   }
@@ -127,15 +140,18 @@ export class CreatureLibrary {
   }
 
   /**
-   * Fit any GLB (procedural or AI-generated, arbitrary size/origin) into a
-   * consistent ~1.5u-tall model resting on y=0, wrapped so def.scale can scale
-   * it uniformly afterwards.
+   * Fit any GLB (procedural or AI-generated, arbitrary size/origin) so it stands
+   * a consistent height on y=0. We fit by HEIGHT (not max dimension) so every
+   * creature is the same height regardless of how wide/long its pose is; a
+   * footprint clamp keeps an unusually wide/long creature from overflowing.
    */
-  private normalize(model: THREE.Object3D, targetHeight = 1.5): THREE.Group {
+  private normalize(model: THREE.Object3D, targetHeight = 2.0): THREE.Group {
     const boxBefore = new THREE.Box3().setFromObject(model);
     const size = boxBefore.getSize(new THREE.Vector3());
-    const maxDim = Math.max(size.x, size.y, size.z) || 1;
-    const factor = targetHeight / maxDim;
+    const h = size.y || 1;
+    const foot = Math.max(size.x, size.z) || 1;
+    const maxFoot = targetHeight * 1.35; // wide/long creatures stay within this
+    const factor = Math.min(targetHeight / h, maxFoot / foot);
     model.scale.multiplyScalar(factor);
 
     // recenter on XZ and drop feet to y=0

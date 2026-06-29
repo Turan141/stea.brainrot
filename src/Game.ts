@@ -15,12 +15,14 @@ import { EconomySystem } from "./systems/EconomySystem.ts";
 import { UpgradeSystem } from "./systems/UpgradeSystem.ts";
 import { BaseStorage } from "./systems/BaseStorage.ts";
 import { FusionSystem } from "./systems/FusionSystem.ts";
+import { BattleDemo } from "./systems/BattleDemo.ts";
 import { FusionPanel } from "./ui/FusionPanel.ts";
 import { HUD } from "./ui/HUD.ts";
 import { Shop } from "./ui/Shop.ts";
 import { Inventory } from "./ui/Inventory.ts";
 import { Settings } from "./ui/Settings.ts";
 import { ShopPrompt } from "./ui/ShopPrompt.ts";
+import { TouchControls, isTouchDevice } from "./ui/TouchControls.ts";
 import { LoadingScreen } from "./ui/LoadingScreen.ts";
 import { AudioManager } from "./audio/AudioManager.ts";
 import { CONFIG } from "./config.ts";
@@ -51,6 +53,7 @@ export class Game {
   private fusion: FusionSystem;
   private fusionPanel: FusionPanel;
   private fusionLabPos = new THREE.Vector3();
+  private battle: BattleDemo;
   private hud: HUD;
   private shop: Shop;
   private inventory: Inventory;
@@ -81,6 +84,7 @@ export class Game {
     this.capture = new CaptureSystem(this.engine.scene, this.library, this.player, this.engine.bus, this.discovered);
     this.conveyor = new ConveyorShop(this.engine.scene, this.library, this.economy, this.baseStorage, this.engine.bus);
     this.fusion = new FusionSystem(this.engine.scene, this.library, this.baseStorage, this.economy, this.engine.bus);
+    this.battle = new BattleDemo(this.engine.scene, this.library, this.engine.bus);
     this.audio = new AudioManager(this.state.settings, this.engine.bus);
 
     // restore persisted progress (stored creatures restored after library load)
@@ -106,6 +110,7 @@ export class Game {
       () => this.resetProgress()
     );
     this.buildButtons(ui);
+    if (isTouchDevice()) new TouchControls(this.engine.input, ui);
 
     this.player.body.position.copy(RESPAWN);
     window.addEventListener("beforeunload", () => this.persist());
@@ -116,15 +121,18 @@ export class Game {
     bar.id = "ui-buttons";
     const inv = iconButton("🐾", "Creaturedex (I)");
     const lab = iconButton("⚗️", "Splice Lab (L)");
+    const fight = iconButton("⚔️", "Battle demo (B)");
     const set = iconButton("⚙️", "Settings");
     inv.addEventListener("click", () => this.inventory.toggle());
     lab.addEventListener("click", () => this.fusionPanel.toggle());
+    fight.addEventListener("click", () => this.startBattleDemo());
     set.addEventListener("click", () => this.settingsPanel.toggle());
-    bar.append(inv, lab, set);
+    bar.append(inv, lab, fight, set);
     ui.appendChild(bar);
     window.addEventListener("keydown", (e) => {
       if (e.code === "KeyI") this.inventory.toggle();
       if (e.code === "KeyL") this.fusionPanel.toggle();
+      if (e.code === "KeyB") this.startBattleDemo();
       if (e.code === "Escape") {
         this.inventory.close();
         this.fusionPanel.close();
@@ -146,6 +154,7 @@ export class Game {
     const sceneAssets = new SceneAssets();
     await sceneAssets.load();
     this.world.applyBuildingModels(sceneAssets);
+    this.baseStorage.applyModels(sceneAssets);
     this.fusionLabPos.copy(this.world.buildingPosition("fusion") ?? this.fusionLabPos);
 
     await this.baseStorage.restore(this.state.stored, this.library);
@@ -182,7 +191,7 @@ export class Game {
     this.updateZoneLocks(level);
     const mod = this.world.sampleModifiers(body.position, body.radius, body.grounded);
 
-    this.controller.update(dt, this.engine.input, p, this.engine.camera, mod);
+    if (!this.battle.active) this.controller.update(dt, this.engine.input, p, this.engine.camera, mod);
     if (mod.jumpBoost > 0) {
       body.velocity.y = mod.jumpBoost;
       body.grounded = false;
@@ -201,11 +210,13 @@ export class Game {
 
     if (this.libraryReady) this.capture.update(dt, this.world.zones, level);
 
-    // parade conveyor + splice lab + interactions (buy / upgrade / sell)
+    // parade conveyor + splice lab + battle demo + interactions
     this.conveyor.update(dt, p);
     this.fusion.update(dt);
     this.fusionPanel.update();
-    this.handleInteraction();
+    this.battle.update(dt);
+    if (!this.battle.active) this.handleInteraction();
+    else this.shopPrompt.update(null);
 
     this.tryDeliver();
 
@@ -214,7 +225,7 @@ export class Game {
     if (income > 0) this.economy.add(income * dt);
 
     this.baseStorage.update(dt);
-    p.syncVisual();
+    p.syncVisual(dt);
 
     // HUD + shop
     this.hud.update(
@@ -234,9 +245,13 @@ export class Game {
     );
     this.shop.refresh();
 
-    this.focus.set(p.position.x, p.position.y + 1, p.position.z);
+    if (this.battle.active) {
+      this.focus.set(this.battle.center.x, 1.6, this.battle.center.z);
+    } else {
+      this.focus.set(p.position.x, p.position.y + 1, p.position.z);
+    }
     this.camera.update(dt, this.focus);
-    this.engine.sceneManager.focusShadow(p.position.x, p.position.z);
+    this.engine.sceneManager.focusShadow(this.focus.x, this.focus.z);
 
     this.autosave -= dt;
     if (this.autosave <= 0) {
@@ -318,6 +333,20 @@ export class Game {
         : null
     );
     if (pressed) this.conveyor.tryBuy();
+  }
+
+  /** Kick off a demo battle between two creatures (prefers ones you own). */
+  private startBattleDemo() {
+    if (this.battle.active) return;
+    const pool = this.baseStorage.stored.length >= 2 ? this.baseStorage.stored.map((c) => c.def) : [...this.library.all];
+    if (pool.length < 2) {
+      this.engine.bus.emit("notify", { text: "Need at least 2 creatures to battle", kind: "warn" });
+      return;
+    }
+    const i = Math.floor(Math.random() * pool.length);
+    let j = Math.floor(Math.random() * pool.length);
+    if (j === i) j = (j + 1) % pool.length;
+    void this.battle.start(pool[i], pool[j]);
   }
 
   private die() {

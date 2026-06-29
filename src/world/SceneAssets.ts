@@ -59,6 +59,34 @@ export class SceneAssets {
     return this.templates.has(id);
   }
 
+  /** A clone at the asset's native (prepared) scale — caller sizes it. */
+  instanceRaw(id: string): THREE.Object3D | null {
+    const t = this.templates.get(id);
+    return t ? t.clone(true) : null;
+  }
+
+  /**
+   * The first albedo map found on an asset, set up for tiling. Lets a flat
+   * tile asset (e.g. the floor) be applied as a repeating texture on a plane
+   * instead of instantiating thousands of tile meshes.
+   */
+  firstTexture(id: string): THREE.Texture | null {
+    const t = this.templates.get(id);
+    if (!t) return null;
+    let found: THREE.Texture | null = null;
+    t.traverse((o) => {
+      if (found) return;
+      const mesh = o as THREE.Mesh;
+      const mat = mesh.isMesh ? (mesh.material as THREE.MeshStandardMaterial) : null;
+      if (mat?.map) found = mat.map;
+    });
+    if (!found) return null;
+    const tex = (found as THREE.Texture).clone();
+    tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+    tex.needsUpdate = true;
+    return tex;
+  }
+
   /** A fresh instance of an asset, scaled so its max dimension ≈ targetSize. */
   instance(id: string, targetSize: number): THREE.Object3D | null {
     const t = this.templates.get(id);

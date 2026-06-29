@@ -65,9 +65,9 @@ export const CONFIG = {
     maxCapacity: 16,
     quadCols: 2, // cages per quadrant along x
     quadRows: 2, // cages per quadrant along z
-    cageCell: 6, // spacing between cage centers within a quadrant
+    cageCell: 7, // spacing between cage centers within a quadrant
     pathHalf: 3.6, // half-width of the central + cross avenues
-    penHalf: 1.4, // half-extent of the wander area inside a cage
+    penHalf: 1.0, // half-extent of the wander area inside a cage
     sellPriceFactor: 12, // sell refund = round(creature.value * this)
     autosaveInterval: 5,
   },

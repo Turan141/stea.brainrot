@@ -18,9 +18,45 @@ export class BaseStorage {
   capacity = CONFIG.base.maxCapacity;
 
   private cages: Cage[] = [];
+  private cageGroup = new THREE.Group();
+  private fountainGroup = new THREE.Group();
 
   constructor(private scene: THREE.Scene) {
+    this.scene.add(this.cageGroup, this.fountainGroup);
     this.buildCages();
+  }
+
+  /**
+   * Swap the procedural cage pens and fountain for generated textured models
+   * where available (kept as groups so we can clear + rebuild cleanly).
+   */
+  applyModels(assets: { instance(id: string, size: number): THREE.Object3D | null; has(id: string): boolean }) {
+    const { deckTop, cageCell } = CONFIG.base;
+    if (assets.has("base-cage")) {
+      this.cageGroup.clear();
+      for (const cage of this.cages) {
+        const m = assets.instance("base-cage", cageCell - 0.4);
+        if (!m) break;
+        m.position.set(cage.center.x, deckTop, cage.center.z);
+        m.traverse((o) => {
+          const mesh = o as THREE.Mesh;
+          if (mesh.isMesh) mesh.castShadow = mesh.receiveShadow = true;
+        });
+        this.cageGroup.add(m);
+      }
+    }
+    if (assets.has("base-fountain")) {
+      const m = assets.instance("base-fountain", 5);
+      if (m) {
+        this.fountainGroup.clear();
+        m.position.set(CONFIG.base.centerX, deckTop, CONFIG.base.centerZ);
+        m.traverse((o) => {
+          const mesh = o as THREE.Mesh;
+          if (mesh.isMesh) mesh.castShadow = mesh.receiveShadow = true;
+        });
+        this.fountainGroup.add(m);
+      }
+    }
   }
 
   private buildCages() {
@@ -53,21 +89,21 @@ export class BaseStorage {
   private buildCage(x: number, z: number, deckTop: number) {
     const penSize = CONFIG.base.cageCell - 1.8;
     const half = penSize / 2;
-    const floorMat = new THREE.MeshStandardMaterial({ color: 0x2b3450, roughness: 0.8 });
+    const floorMat = new THREE.MeshStandardMaterial({ color: 0x8a6f47, roughness: 0.85 });
     const postMat = new THREE.MeshStandardMaterial({ color: 0x8893ad, roughness: 0.6, metalness: 0.1 });
 
     const floor = new THREE.Mesh(new THREE.BoxGeometry(penSize, 0.08, penSize), floorMat);
     floor.position.set(x, deckTop + 0.05, z);
     floor.receiveShadow = true;
-    this.scene.add(floor);
+    this.cageGroup.add(floor);
 
-    const H = 1.5;
+    const H = 2.2;
     for (const sx of [-1, 1]) {
       for (const sz of [-1, 1]) {
         const post = new THREE.Mesh(new THREE.BoxGeometry(0.16, H, 0.16), postMat);
         post.position.set(x + sx * half, deckTop + H / 2, z + sz * half);
         post.castShadow = true;
-        this.scene.add(post);
+        this.cageGroup.add(post);
       }
     }
     for (const [w, d, ox, oz] of [
@@ -78,13 +114,13 @@ export class BaseStorage {
     ] as const) {
       const rail = new THREE.Mesh(new THREE.BoxGeometry(w, 0.1, d), postMat);
       rail.position.set(x + ox, deckTop + H, z + oz);
-      this.scene.add(rail);
+      this.cageGroup.add(rail);
     }
   }
 
   /** Plus-shaped stone avenues separating the four cage quadrants. */
   private buildAvenues(cx: number, cz: number, deckTop: number, spanX: number, spanZ: number, pathHalf: number) {
-    const mat = new THREE.MeshStandardMaterial({ color: 0x6b7184, roughness: 0.9 });
+    const mat = new THREE.MeshStandardMaterial({ color: 0xc2a878, roughness: 0.9 });
     const y = deckTop + 0.04;
     const lenZ = (spanZ + 3) * 2;
     const lenX = (spanX + 3) * 2;
@@ -104,16 +140,16 @@ export class BaseStorage {
     const base = new THREE.Mesh(new THREE.CylinderGeometry(2.4, 2.7, 0.6, 24), stone);
     base.position.set(cx, deckTop + 0.3, cz);
     base.castShadow = base.receiveShadow = true;
-    this.scene.add(base);
+    this.fountainGroup.add(base);
     const tier = new THREE.Mesh(new THREE.CylinderGeometry(1.3, 1.6, 0.5, 20), stone);
     tier.position.set(cx, deckTop + 0.85, cz);
-    this.scene.add(tier);
+    this.fountainGroup.add(tier);
     const water = new THREE.Mesh(
       new THREE.SphereGeometry(0.8, 16, 12),
       new THREE.MeshStandardMaterial({ color: 0x4fc3ff, emissive: 0x2a7fd0, emissiveIntensity: 0.7, roughness: 0.3 })
     );
     water.position.set(cx, deckTop + 1.5, cz);
-    this.scene.add(water);
+    this.fountainGroup.add(water);
   }
 
   get isFull(): boolean {

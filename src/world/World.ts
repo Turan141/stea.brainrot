@@ -5,6 +5,7 @@ import type { Zone } from "./Zone.ts";
 import { CONFIG } from "../config.ts";
 import { grassTexture, plazaTexture } from "./textures.ts";
 import { BaseBlockout } from "./BaseBlockout.ts";
+import { BaseDecor } from "./BaseDecor.ts";
 
 export interface Bounds {
   minX: number;
@@ -24,6 +25,7 @@ export class World {
   readonly bounds: Bounds;
   readonly zoneManager: ZoneManager;
   private blockout!: BaseBlockout;
+  private decor?: BaseDecor;
 
   /** Base structures the follow-camera should pull in front of (avoid occlusion). */
   get occluders(): THREE.Object3D[] {
@@ -31,8 +33,18 @@ export class World {
   }
 
   /** Swap blockout placeholders for generated models where available. */
-  applyBuildingModels(assets: { instance(id: string, targetSize: number): THREE.Object3D | null }) {
+  applyBuildingModels(assets: {
+    instance(id: string, targetSize: number): THREE.Object3D | null;
+    has(id: string): boolean;
+    instanceRaw(id: string): THREE.Object3D | null;
+  }) {
+    // NOTE: the generated base-floor GLB texture is a baked UV atlas (not a
+    // seamless tile), so it can't be used as a repeating deck texture — the
+    // procedural plaza texture is used for the deck instead.
     this.blockout.applyModels(assets);
+    // build the decoration pass now that assets are loaded, so props use the
+    // generated textured models where available (procedural fallback otherwise)
+    this.decor = new BaseDecor(this.scene, assets);
   }
 
   /** World position of a base building (for proximity interactions). */
@@ -78,18 +90,21 @@ export class World {
     const d = halfDepth * 2;
     this.baseTop = deckTop;
 
-    // stone rim (slightly larger, forms a low curb around the deck)
+    // stone rim: a low curb around the deck. Its top MUST sit below the deck
+    // surface, otherwise this larger box covers the whole plaza floor.
+    const rimH = 0.6;
     const rim = new THREE.Mesh(
-      new THREE.BoxGeometry(w + 2.4, deckTop + 0.2, d + 2.4),
-      new THREE.MeshStandardMaterial({ color: 0x6a7486, roughness: 0.9 })
+      new THREE.BoxGeometry(w + 2.4, rimH, d + 2.4),
+      new THREE.MeshStandardMaterial({ color: 0x9a7d50, roughness: 0.9 })
     );
-    rim.position.set(centerX, (deckTop + 0.2) / 2 - 0.05, centerZ);
+    rim.position.set(centerX, deckTop - 0.06 - rimH / 2, centerZ); // top at deckTop-0.06
     rim.receiveShadow = true;
     this.scene.add(rim);
 
-    // stone-plaza deck top (top face at y = deckTop)
-    const deckMat = new THREE.MeshStandardMaterial({ map: plazaTexture(), roughness: 0.8 });
-    (deckMat.map as THREE.Texture).repeat.set(w / 12, d / 12);
+    // stone-plaza deck top (top face at y = deckTop). Warm color tint reinforces
+    // the sandstone look so the floor never reads grey under sky light.
+    const deckMat = new THREE.MeshStandardMaterial({ map: plazaTexture(), color: 0xffeccb, roughness: 0.85 });
+    (deckMat.map as THREE.Texture).repeat.set(w / 16, d / 16);
     const deckH = 0.6;
     const deck = new THREE.Mesh(new THREE.BoxGeometry(w, deckH, d), deckMat);
     deck.position.set(centerX, deckTop - deckH / 2, centerZ);
@@ -122,6 +137,7 @@ export class World {
 
   update(dt: number, t: number) {
     this.zoneManager.update(dt, t);
+    this.decor?.update(t);
   }
 
   /** Highest standable surface under (x,z) at/below the body (ground = 0). */

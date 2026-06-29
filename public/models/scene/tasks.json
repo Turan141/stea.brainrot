@@ -1,0 +1,77 @@
+{
+  "base-floor": {
+    "previewTaskId": "019f12a8-0ef9-7053-8117-65f761d6b409",
+    "refineTaskId": "019f12a9-6269-7d4e-8b84-54c4eb6131bc",
+    "prompt": "A seamless modular square floor tile for a stylized cartoon game base: a low-poly stone-and-metal plaza panel with clean geometric grooves and subtle glowing edge trim, flat top surface, edges that tile seamlessly in a grid, top-down friendly, single tile, NO props, flat, game-ready, low poly."
+  },
+  "base-wall": {
+    "previewTaskId": "019f12a8-0913-7cca-9373-364ad52f7bfb",
+    "refineTaskId": "019f12a9-719b-7d8f-828b-bc3dff4be955",
+    "prompt": "A modular straight wall segment for a stylized cartoon game base: a low-poly stone rampart with a metal coping cap on top and subtle glowing accent trim, flat butt-ends so segments line up seamlessly side by side, about 4 units long and 3 units tall, single straight piece (no corners), centered, flat bottom, NO ground plane, game-ready, low poly."
+  },
+  "pedestal": {
+    "previewTaskId": "019f0fd2-19da-7811-ba15-841350584f72",
+    "refineTaskId": "019f12c4-7e2f-74b1-a116-39955ae201be",
+    "prompt": "a stylized low-poly display pedestal podium with a glowing top ring, cartoon, game-ready, under 1500 triangles"
+  },
+  "base-gate": {
+    "previewTaskId": "019f0fd3-0046-736e-868a-514f57e687b9",
+    "refineTaskId": "019f12c4-7e31-72f9-b443-1dfbaa6591e0",
+    "prompt": "a stylized low-poly cartoon entrance gate arch with banners, colorful, game-ready, under 3000 triangles"
+  },
+  "fusion-lab": {
+    "previewTaskId": "019f0fd0-98e2-77af-981d-0df5c2c5f2c0",
+    "refineTaskId": "019f12c4-7e34-72fa-be4c-8017348e908b",
+    "prompt": "a stylized low-poly cartoon science fusion laboratory dome with glowing tubes and antennas, colorful, game-ready, under 6000 triangles"
+  },
+  "base-hq": {
+    "previewTaskId": "019f0fce-949a-74fa-9c4f-e9c6edf52508",
+    "refineTaskId": "019f12c4-7e32-74b2-90c9-2150f2bda98c",
+    "prompt": "a stylized low-poly cartoon HQ headquarters building, cute, colorful, rounded roof, friendly, game-ready, under 6000 triangles"
+  },
+  "prop-lamp": {
+    "previewTaskId": "019f12e9-4d48-70cf-9575-76b8127fcb25",
+    "refineTaskId": "019f12ea-2f5c-70fc-9fde-51d309f92906",
+    "prompt": "A stylized cartoon street lamp: an ornate metal pole on a stone base with a glowing warm lantern on top, cute low-poly, colorful, game-ready, centered, flat bottom, NO ground plane."
+  },
+  "prop-banner": {
+    "previewTaskId": "019f12e9-4d49-7baf-a0fb-7bade3dde519",
+    "refineTaskId": "019f12ea-2def-7a4e-8937-0817c6a192d3",
+    "prompt": "A stylized cartoon hanging fabric pennant banner with a round emblem and a horizontal top bar, draped cloth, cute low-poly, game-ready, centered, NO ground plane."
+  },
+  "prop-bench": {
+    "previewTaskId": "019f12e9-4d4b-7e73-a5b3-43d5bc333f02",
+    "refineTaskId": "019f12ea-8588-7ec1-80f7-dfb9b29999a2",
+    "prompt": "A stylized cartoon park bench with wood slats and a metal frame, cute low-poly, game-ready, centered, flat bottom, NO ground plane."
+  },
+  "base-fountain": {
+    "previewTaskId": "019f12e9-4d47-7e72-a3ee-cfe3d570a977",
+    "refineTaskId": "019f12ea-9b76-7112-bd18-40e704d2922b",
+    "prompt": "A stylized cartoon multi-tier stone fountain with a round basin and glowing blue water, ornate cute low-poly, game-ready, centered, flat bottom, NO ground plane."
+  },
+  "base-cage": {
+    "previewTaskId": "019f12e9-4d51-70d3-9da9-3c50c6bf29a9",
+    "refineTaskId": "019f12ea-c72c-7c1e-ac58-a190377247ea",
+    "prompt": "A stylized cartoon creature pen: a low square fenced cage with corner posts, top rails and a little gate, open top, cute low-poly, game-ready, centered, flat bottom, NO ground plane."
+  },
+  "prop-barrel": {
+    "previewTaskId": "019f12e9-4d45-70ce-a1d5-9e730ba2974a",
+    "refineTaskId": "019f12eb-b84e-7acd-bd6e-e72f48a0f83c",
+    "prompt": "A stylized cartoon wooden barrel with metal hoop rings, cute low-poly, game-ready, centered, flat bottom, NO ground plane."
+  },
+  "prop-crate": {
+    "previewTaskId": "019f12e9-4d4e-70d2-ac79-a669fa102525",
+    "refineTaskId": "019f12ec-2732-7190-899f-cffc694708fc",
+    "prompt": "A stylized cartoon wooden cargo crate with metal corner brackets, cute low-poly, game-ready, centered, flat bottom, NO ground plane."
+  },
+  "prop-stall": {
+    "previewTaskId": "019f12e9-4d4d-70d1-9d2d-357b7bb6fec0",
+    "refineTaskId": "019f12ec-7eef-71d9-90e1-fd2aa6247741",
+    "prompt": "A stylized cartoon market stall with a wooden counter, a striped awning and goods on top, cute low-poly, game-ready, centered, flat bottom, NO ground plane."
+  },
+  "prop-planter": {
+    "previewTaskId": "019f12e9-4d4c-70d0-be5f-daebb0ce841f",
+    "refineTaskId": "019f12ee-a370-7d10-b59f-d89889fb3781",
+    "prompt": "A stylized cartoon stone planter box with colorful round low-poly flowers and green foliage, cute, game-ready, low-poly, centered, flat bottom, NO ground plane."
+  }
+}

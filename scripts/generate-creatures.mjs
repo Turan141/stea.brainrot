@@ -28,14 +28,30 @@ import {
   RARITIES,
 } from "./lib/taxonomy.mjs";
 
-// Curated, on-theme creatures (used with the `curated` arg). Each is an
-// original "two objects fused" meme hybrid. Edit freely.
+// Curated, on-theme creatures (used with the `curated` arg). Battle-ready meme
+// hybrids, each with a signature weapon. Entries may give a custom `prompt`,
+// `name`, `element` and `role`; otherwise fall back to {a, b} + comboPrompt.
+const BATTLE_STYLE =
+  "Colorful, goofy, exaggerated proportions, low poly, cute but fierce and battle-ready, " +
+  "dynamic ready-to-fight pose, single character, game-ready, under 5000 triangles, GLB.";
+
 const CURATED = [
-  { a: "toaster", b: "octopus", rarity: "rare" },
-  { a: "traffic cone", b: "corgi", rarity: "common" },
-  { a: "washing machine", b: "narwhal", rarity: "epic" },
-  { a: "cuckoo clock", b: "axolotl", rarity: "rare" },
-  { a: "fire hydrant", b: "dinosaur", rarity: "legendary" },
+  { name: "Broccoli Samurai", rarity: "epic", element: "food", role: "fighter",
+    prompt: `An original cartoon creature: a broccoli warrior samurai clad in segmented armor, wielding a sharp katana, fierce battle stance. ${BATTLE_STYLE}` },
+  { name: "Refrigerator Bruiser", rarity: "epic", element: "tech", role: "tank",
+    prompt: `An original cartoon creature: a walking refrigerator brawler with two huge mechanical piston fists, stocky and armored, ready to smash. ${BATTLE_STYLE}` },
+  { name: "Pizza Wizard", rarity: "legendary", element: "food", role: "support",
+    prompt: `An original cartoon creature: a pizza-slice wizard in a starry hat, holding a flaming pizza peel as a magic staff, casting fire. ${BATTLE_STYLE}` },
+  { name: "TV Duck", rarity: "rare", element: "tech", role: "trickster",
+    prompt: `An original cartoon creature: a duck with a retro television for a body, brandishing a crackling energy antenna as a spear. ${BATTLE_STYLE}` },
+  { name: "Aquarium Walker", rarity: "epic", element: "object", role: "tank",
+    prompt: `An original cartoon creature: a fish-tank aquarium on sturdy legs, ramming with a heavy reinforced glass shield, water and fish inside. ${BATTLE_STYLE}` },
+  { name: "Banana Astronaut", rarity: "rare", element: "cosmic", role: "assassin",
+    prompt: `An original cartoon creature: a banana astronaut in a spacesuit with glowing rocket-powered jet gauntlets, fast and agile fighting pose. ${BATTLE_STYLE}` },
+  { name: "Toaster Knight", rarity: "rare", element: "object", role: "tank",
+    prompt: `An original cartoon creature: a toaster knight in armor, using two toaster-lids as round shields, popping toast, defensive stance. ${BATTLE_STYLE}` },
+  { name: "Traffic Cone Rhino", rarity: "legendary", element: "object", role: "fighter",
+    prompt: `An original cartoon creature: a rhino made of a traffic cone, a massive ramming horn at the front, armored hide, charging pose. ${BATTLE_STYLE}` },
 ];
 
 function titleCase(s) {
@@ -104,9 +120,10 @@ function buildCuratedSpec(entry, usedNames, usedSeeds) {
 
   const rng = mulberry32(seed);
   const rarity = RARITIES.find((r) => r.key === entry.rarity) ?? RARITIES[0];
-  let name = titleCase(`${entry.a} ${entry.b}`);
+  const baseName = entry.name ?? titleCase(`${entry.a} ${entry.b}`);
+  let name = baseName;
   let n = 2;
-  while (usedNames.has(name)) name = `${titleCase(`${entry.a} ${entry.b}`)} ${n++}`;
+  while (usedNames.has(name)) name = `${baseName} ${n++}`;
   usedNames.add(name);
 
   return {
@@ -122,7 +139,9 @@ function buildCuratedSpec(entry, usedNames, usedSeeds) {
     palette: makePalette("meme", rng),
     scale: +(0.8 + rng() * 0.7).toFixed(2),
     rotationY: +(rng() * Math.PI * 2).toFixed(3),
-    prompt: comboPrompt(entry.a, entry.b, rarity.key),
+    element: entry.element,
+    role: entry.role,
+    prompt: entry.prompt ?? comboPrompt(entry.a, entry.b, rarity.key),
   };
 }
 
@@ -130,7 +149,10 @@ async function main() {
   // Always generate WITH textures unless explicitly overridden (refine = preview+texture).
   if (!process.env.MESHY_MODE) process.env.MESHY_MODE = "refine";
   const curated = process.argv.includes("curated") || process.env.CURATED === "1";
-  const count = curated ? CURATED.length : parseInt(process.argv[2] ?? process.env.COUNT ?? "12", 10) || 12;
+  const limit = process.argv.map(Number).find((n) => Number.isFinite(n) && n > 0);
+  const count = curated
+    ? Math.min(CURATED.length, limit ?? CURATED.length)
+    : parseInt(process.argv[2] ?? process.env.COUNT ?? "12", 10) || 12;
   const generator = selectGenerator();
   const provider = generator.meta?.provider ?? "procedural";
 
@@ -164,6 +186,8 @@ async function main() {
         palette: spec.palette,
         scale: spec.scale,
         rotationY: spec.rotationY,
+        ...(spec.element ? { element: spec.element } : {}),
+        ...(spec.role ? { role: spec.role } : {}),
         file: `models/creatures/${spec.id}.glb`,
         thumb: `models/creatures/${spec.id}.svg`,
         seed: spec.seed,
