@@ -21,6 +21,7 @@ import { BattleDemo } from "./systems/BattleDemo.ts";
 import { EnemyCamp } from "./systems/EnemyCamp.ts";
 import { FusionPanel } from "./ui/FusionPanel.ts";
 import { ArenaPanel } from "./ui/ArenaPanel.ts";
+import { ShopPanel } from "./ui/ShopPanel.ts";
 import { ThumbnailRenderer } from "./ui/ThumbnailRenderer.ts";
 import { Objectives } from "./ui/Objectives.ts";
 import { Tutorial } from "./systems/Tutorial.ts";
@@ -60,6 +61,7 @@ export class Game {
   private fusion: FusionSystem;
   private fusionPanel: FusionPanel;
   private arenaPanel!: ArenaPanel;
+  private shopPanel!: ShopPanel;
   private thumbs!: ThumbnailRenderer;
   private pads: { x: number; z: number; radius: number; label: string; action: () => void; ring: THREE.Mesh }[] = [];
   private camp!: EnemyCamp;
@@ -113,6 +115,7 @@ export class Game {
     this.inventory = new Inventory(ui, this.library, this.discovered, this.thumbs);
     this.fusionPanel = new FusionPanel(ui, this.baseStorage, this.fusion, this.economy, this.thumbs, () => this.persist());
     this.arenaPanel = new ArenaPanel(ui, this.baseStorage, this.library, this.thumbs, (champ, prize, lvl) => this.startArenaFight(champ, prize, lvl));
+    this.shopPanel = new ShopPanel(ui, this.baseStorage, this.library, this.economy, this.thumbs, (def, price) => this.buyCreature(def, price));
     this.fusion.onChange = () => this.persist();
     this.settingsPanel = new Settings(
       ui,
@@ -302,11 +305,15 @@ export class Game {
     this.updatePerf(dt);
   }
 
-  // --- temporary perf overlay (diagnostics) ---
+  // --- perf overlay (diagnostics; off by default) ---
+  // Enable with `localStorage.bh_perf = 1` (then reload) or URL `?perf`.
+  private perfOn =
+    typeof localStorage !== "undefined" && localStorage.getItem("bh_perf") === "1"; // off by default; set bh_perf=1 to show
   private perfEl: HTMLElement | null = null;
   private perfAcc = 0;
   private perfFrames = 0;
   private updatePerf(dt: number) {
+    if (!this.perfOn) return;
     if (!this.perfEl) {
       const el = document.createElement("div");
       el.id = "perf";
@@ -362,6 +369,32 @@ export class Game {
     this.addPad("upgrades", "🔧 <b>Upgrades</b>", 0xffa53c, () => this.shop.toggle());
     this.addPad("arena", "⚔️ <b>Arena</b>", 0xff5d6a, () => this.arenaPanel.open());
     this.addPad("castle", "🐾 <b>Creaturedex</b>", 0x4f8fff, () => this.inventory.toggle());
+    this.addPad("shop", "🛒 <b>Creature Shop</b>", 0x33c2b0, () => this.shopPanel.open());
+  }
+
+  /** Buy a creature from the shop: spend coins, mint it, drop into a free cage. */
+  private async buyCreature(def: CreatureDef, price: number): Promise<boolean> {
+    if (this.baseStorage.isFull) {
+      this.engine.bus.emit("notify", { text: "All cages full — sell a creature (Q) first", kind: "warn" });
+      return false;
+    }
+    if (!this.economy.spend(price)) {
+      this.engine.bus.emit("notify", { text: "Not enough coins", kind: "warn" });
+      return false;
+    }
+    const mesh = await this.library.createInstance(def);
+    this.engine.scene.add(mesh);
+    if (!this.baseStorage.store(new Creature(def, mesh, 1))) {
+      this.engine.scene.remove(mesh);
+      this.economy.add(price); // refund — couldn't place
+      this.engine.bus.emit("notify", { text: "Base full — purchase refunded", kind: "warn" });
+      return false;
+    }
+    this.discovered.add(def.id);
+    this.engine.bus.emit("creature:delivered", { count: 1, value: def.income });
+    this.engine.bus.emit("notify", { text: `Bought ${def.name}!`, kind: "good" });
+    this.persist();
+    return true;
   }
 
   private addPad(buildingId: string, label: string, color: number, action: () => void) {

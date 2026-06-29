@@ -37,7 +37,7 @@ export class ArenaPanel {
     this.list = this.modal.querySelector(".fuse-list")!;
     this.header = this.modal.querySelector(".arena-header")!;
     this.modal.querySelector(".close")!.addEventListener("click", () => this.close());
-    this.modal.addEventListener("click", (e) => {
+    this.modal.addEventListener("pointerdown", (e) => {
       if (e.target === this.modal) this.close();
     });
     root.appendChild(this.modal);

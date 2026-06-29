@@ -37,7 +37,7 @@ export class FusionPanel {
     this.list = this.modal.querySelector(".fuse-list")!;
     this.status = this.modal.querySelector(".fuse-status")!;
     this.modal.querySelector(".close")!.addEventListener("click", () => this.close());
-    this.modal.addEventListener("click", (e) => {
+    this.modal.addEventListener("pointerdown", (e) => {
       if (e.target === this.modal) this.close();
     });
     root.appendChild(this.modal);

@@ -23,10 +23,8 @@ const BASE = "https://api.meshy.ai/openapi/v2/text-to-3d";
 
 // scene asset id → output file + keywords that identify its preview prompt
 const TARGETS = [
-  { id: "base-gate", file: "base-gate.glb", keywords: ["entrance", "gate"] },
-  { id: "base-hq", file: "base-hq.glb", keywords: ["headquarters"] },
-  { id: "fusion-lab", file: "fusion-lab.glb", keywords: ["fusion", "laboratory"] },
-  { id: "pedestal", file: "pedestal.glb", keywords: ["pedestal"] },
+  // Only the shop — the others are already textured + decimated; don't re-refine them.
+  { id: "shop", file: "shop.glb", keywords: ["pet-shop"] },
 ];
 
 const dry = process.argv.includes("--dry");

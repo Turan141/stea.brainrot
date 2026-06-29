@@ -67,14 +67,65 @@
       "group": "structures",
       "file": "models/scene/base-floor.glb"
     },
-    { "id": "prop-lamp", "name": "Lamp", "group": "props", "file": "models/scene/prop-lamp.glb" },
-    { "id": "prop-planter", "name": "Planter", "group": "props", "file": "models/scene/prop-planter.glb" },
-    { "id": "prop-crate", "name": "Crate", "group": "props", "file": "models/scene/prop-crate.glb" },
-    { "id": "prop-barrel", "name": "Barrel", "group": "props", "file": "models/scene/prop-barrel.glb" },
-    { "id": "prop-banner", "name": "Banner", "group": "props", "file": "models/scene/prop-banner.glb" },
-    { "id": "prop-bench", "name": "Bench", "group": "props", "file": "models/scene/prop-bench.glb" },
-    { "id": "prop-stall", "name": "Stall", "group": "props", "file": "models/scene/prop-stall.glb" },
-    { "id": "base-fountain", "name": "Fountain", "group": "structures", "file": "models/scene/base-fountain.glb" },
-    { "id": "base-cage", "name": "Cage", "group": "structures", "file": "models/scene/base-cage.glb" }
+    {
+      "id": "prop-lamp",
+      "name": "Lamp",
+      "group": "props",
+      "file": "models/scene/prop-lamp.glb"
+    },
+    {
+      "id": "prop-planter",
+      "name": "Planter",
+      "group": "props",
+      "file": "models/scene/prop-planter.glb"
+    },
+    {
+      "id": "prop-crate",
+      "name": "Crate",
+      "group": "props",
+      "file": "models/scene/prop-crate.glb"
+    },
+    {
+      "id": "prop-barrel",
+      "name": "Barrel",
+      "group": "props",
+      "file": "models/scene/prop-barrel.glb"
+    },
+    {
+      "id": "prop-banner",
+      "name": "Banner",
+      "group": "props",
+      "file": "models/scene/prop-banner.glb"
+    },
+    {
+      "id": "prop-bench",
+      "name": "Bench",
+      "group": "props",
+      "file": "models/scene/prop-bench.glb"
+    },
+    {
+      "id": "prop-stall",
+      "name": "Stall",
+      "group": "props",
+      "file": "models/scene/prop-stall.glb"
+    },
+    {
+      "id": "base-fountain",
+      "name": "Fountain",
+      "group": "structures",
+      "file": "models/scene/base-fountain.glb"
+    },
+    {
+      "id": "base-cage",
+      "name": "Cage",
+      "group": "structures",
+      "file": "models/scene/base-cage.glb"
+    },
+    {
+      "id": "shop",
+      "name": "Creature Shop",
+      "group": "shop",
+      "file": "models/scene/shop.glb"
+    }
   ]
 }

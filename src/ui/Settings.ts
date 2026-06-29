@@ -31,7 +31,7 @@ export class Settings {
     root.appendChild(this.modal);
 
     this.modal.querySelector(".close")!.addEventListener("click", () => this.close());
-    this.modal.addEventListener("click", (e) => {
+    this.modal.addEventListener("pointerdown", (e) => {
       if (e.target === this.modal) this.close();
     });
     this.modal.querySelectorAll<HTMLElement>(".toggle").forEach((t) => {

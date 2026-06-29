@@ -28,6 +28,9 @@ const CATALOG = {
     { id: "pedestal", name: "Pedestal", palette: ["#cfd6e6", "#6f86b8"], prompt: "a stylized low-poly display pedestal podium with a glowing top ring, cartoon, game-ready, under 1500 triangles" },
     { id: "base-gate", name: "Gate", palette: ["#3a4a72", "#ffe08a"], prompt: "a stylized low-poly cartoon entrance gate arch with banners, colorful, game-ready, under 3000 triangles" },
   ],
+  shop: [
+    { id: "shop", name: "Creature Shop", palette: ["#33c2b0", "#ffd24b"], prompt: "a stylized low-poly cartoon creature pet-shop stall with a striped teal awning, wooden counter, a hanging sign, glass jars and small cages holding cute colorful creatures on the shelves, friendly, vibrant, game-ready, under 6000 triangles" },
+  ],
   props: [
     { id: "tree", name: "Tree", palette: ["#4fae5d", "#2f7a3a"], prompt: "a stylized low-poly cartoon tree with a rounded leafy canopy, colorful, game-ready, under 2000 triangles" },
     { id: "rock", name: "Rock", palette: ["#8c93a3", "#5e6577"], prompt: "a chunky low-poly cartoon boulder rock, game-ready, under 1500 triangles" },

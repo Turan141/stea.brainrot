@@ -25,7 +25,7 @@ export class Inventory {
       </div>`;
     this.grid = this.modal.querySelector(".inv-grid")!;
     this.modal.querySelector(".close")!.addEventListener("click", () => this.close());
-    this.modal.addEventListener("click", (e) => {
+    this.modal.addEventListener("pointerdown", (e) => {
       if (e.target === this.modal) this.close();
     });
     root.appendChild(this.modal);

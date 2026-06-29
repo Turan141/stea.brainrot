@@ -73,5 +73,10 @@
     "previewTaskId": "019f12e9-4d4c-70d0-be5f-daebb0ce841f",
     "refineTaskId": "019f12ee-a370-7d10-b59f-d89889fb3781",
     "prompt": "A stylized cartoon stone planter box with colorful round low-poly flowers and green foliage, cute, game-ready, low-poly, centered, flat bottom, NO ground plane."
+  },
+  "shop": {
+    "previewTaskId": "019f13c1-e737-7264-be22-5a8c0137597b",
+    "refineTaskId": "019f13cd-5bb8-758f-8b54-524202ae26ff",
+    "prompt": "a stylized low-poly cartoon creature pet-shop stall with a striped teal awning, wooden counter, a hanging sign, glass jars and small cages holding cute colorful creatures on the shelves, friendly, vibrant, game-ready, under 6000 triangles"
   }
 }

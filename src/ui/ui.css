@@ -279,3 +279,28 @@ body.is-touch #ui-buttons { transform: scale(.9); transform-origin: top right; }
 #objective.done .obj-lbl { color: #6ff0c0; }
 #objective .obj-text { font: 600 13px/1.35 system-ui; }
 @media (max-width: 640px) { #objective { top: 58px; max-width: 56vw; font-size: 12px; } }
+
+/* ---- Creature Shop ---- */
+.shop-modal .modal-card { width: min(720px, 94vw); background: linear-gradient(160deg, #102218 0%, #0f1828 55%, #0c1422 100%); border-color: #1f6f63; }
+.shop-modal .modal-card h2 { color: #5fe6cf; }
+.shop-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 6px 0 12px; }
+.shop-coins { font-size: 15px; color: #ffe08a; }
+.shop-coins b { color: #fff; }
+.shop-refresh { background: #16463f; color: #9ff0e0; border: 1px solid #2c8576; border-radius: 10px; padding: 7px 12px; font-weight: 700; cursor: pointer; }
+.shop-refresh:hover { background: #1d5a50; color: #fff; }
+.shop-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 10px; max-height: 56vh; overflow-y: auto; }
+.shop-card { display: flex; flex-direction: column; align-items: center; gap: 3px; background: rgba(255,255,255,.04); border: 2px solid #1c3a44; border-radius: 12px; padding: 10px 8px; text-align: center; }
+.shop-card.sold { opacity: .55; }
+.shop-card img { width: 84px; height: 84px; object-fit: contain; background: #0a1120; border-radius: 10px; }
+.shop-card .nm { font-weight: 700; font-size: 12px; }
+.shop-card .rar { font-size: 11px; text-transform: capitalize; }
+.shop-card .tags { display: flex; gap: 4px; flex-wrap: wrap; justify-content: center; }
+.shop-price { font-weight: 800; color: #ffe08a; margin-top: 2px; }
+.shop-buy { width: 100%; margin-top: 4px; background: linear-gradient(180deg,#2ec9a8,#1c8f78); color: #04140f; border: 0; border-radius: 9px; padding: 8px; font-weight: 800; cursor: pointer; }
+.shop-buy:hover:not(:disabled) { filter: brightness(1.1); }
+.shop-buy:disabled { background: #2a3340; color: #7c89a0; cursor: default; }
+@media (max-width: 720px) {
+  .shop-modal .modal-card { width: 96vw; max-height: 88vh; }
+  .shop-list { grid-template-columns: repeat(auto-fill, minmax(108px, 1fr)); }
+  .shop-card img { width: 64px; height: 64px; }
+}

@@ -295,14 +295,17 @@ export class BaseDecor {
     // Plants form a ring AROUND the cage cluster (outside the pens), never
     // inside them. clear() rejects the cage band / avenues / building fronts.
     const R = 18; // just outside the cage cluster (which reaches ~15.6)
+    // Planter GLBs are dense (~16k tris) and can't decimate — space them out on
+    // mobile so far fewer are placed (big tri + draw-call saving).
+    const step = QUALITY.mobile ? 9 : 4.5;
     const place = (x: number, z: number) => {
       if (this.clear(x, z, cx, cz)) this.topiary(x, z, deckTop);
     };
-    for (let z = -R; z <= R; z += 4.5) {
+    for (let z = -R; z <= R; z += step) {
       place(cx - R, cz + z);
       place(cx + R, cz + z);
     }
-    for (let x = -R + 4.5; x <= R - 4.5; x += 4.5) {
+    for (let x = -R + step; x <= R - step; x += step) {
       place(cx + x, cz - R);
       place(cx + x, cz + R);
     }
@@ -375,7 +378,8 @@ export class BaseDecor {
   private lampsAndStrings(left: number, right: number, front: number, back: number, deckTop: number) {
     const inset = 3.2;
     const lampXs: number[] = [];
-    for (let x = left + 8; x <= right - 8; x += 16) lampXs.push(x);
+    const lampStep = QUALITY.mobile ? 26 : 16; // fewer lamp GLBs on mobile
+    for (let x = left + 8; x <= right - 8; x += lampStep) lampXs.push(x);
     const lamps: THREE.Vector3[] = [];
 
     // back + front rows (skip the gate gap on the front). Only every other
@@ -385,7 +389,8 @@ export class BaseDecor {
       if (Math.abs(x) > CONFIG.avenue.halfWidth + 3) lamps.push(this.lamp(x, front + inset, deckTop, false));
     });
     // side rows
-    for (let z = front + 14; z <= back - 14; z += 14) {
+    const sideStep = QUALITY.mobile ? 24 : 14;
+    for (let z = front + 14; z <= back - 14; z += sideStep) {
       this.lamp(left + inset, z, deckTop, false);
       this.lamp(right - inset, z, deckTop, false);
     }
@@ -680,33 +685,46 @@ export class BaseDecor {
 
   private avenueRugs(cx: number, cz: number, deckTop: number) {
     const pathHalf = CONFIG.base.pathHalf;
-    const y = deckTop + 0.05;
     const reach = 15;
-    const rug = (w: number, d: number) => {
+    const crimson = new THREE.MeshStandardMaterial({ color: 0x97323f, roughness: 0.8 }); // crimson carpet
+    const gold = new THREE.MeshStandardMaterial({ color: 0xffc24b, emissive: 0xc8902a, emissiveIntensity: 0.35, roughness: 0.6 }); // gold band
+
+    // Each layer is a thin slab at a DISTINCT, non-overlapping height so no two
+    // faces are coplanar (that was the flicker / z-fighting). The whole rug also
+    // sits clearly above the stone avenue (top ≈ deckTop+0.07).
+    const rug = (w: number, d: number, baseY: number) => {
       const g = new THREE.Group();
-      const mat = new THREE.MeshStandardMaterial({ color: 0x97323f, roughness: 0.8 }); // crimson carpet
-      const pad = new THREE.Mesh(new THREE.BoxGeometry(w, 0.04, d), mat);
-      g.add(pad);
-      const trim = new THREE.Mesh(
-        new THREE.BoxGeometry(w - 0.6, 0.05, d - 0.6),
-        new THREE.MeshStandardMaterial({ color: 0xffc24b, emissive: 0xc8902a, emissiveIntensity: 0.35, roughness: 0.6 }) // gold band
-      );
-      const trim2 = new THREE.Mesh(new THREE.BoxGeometry(w - 1.0, 0.06, d - 1.0), mat);
-      g.add(trim, trim2);
+      const layer = (lw: number, ld: number, mat: THREE.Material, yc: number) => {
+        const m = new THREE.Mesh(new THREE.BoxGeometry(lw, 0.02, ld), mat);
+        m.position.y = yc;
+        m.receiveShadow = true;
+        g.add(m);
+      };
+      layer(w, d, crimson, 0); // base mat
+      layer(w - 0.6, d - 0.6, gold, 0.025); // gold ring, lifted above base
+      layer(w - 1.0, d - 1.0, crimson, 0.05); // inner field, above gold
+      g.position.y = baseY;
       return g;
     };
-    const ns = rug(pathHalf * 2 - 0.6, reach * 2);
-    ns.position.set(cx, y, cz);
+
+    const nsBase = deckTop + 0.1; // above the avenue stone
+    const ns = rug(pathHalf * 2 - 0.6, reach * 2, nsBase);
+    ns.position.x = cx;
+    ns.position.z = cz;
     this.scene.add(ns);
-    const ew = rug(reach * 2, pathHalf * 2 - 0.6);
-    ew.position.set(cx, y + 0.01, cz);
+    // EW arm sits a clear step above the NS arm so the crossing never z-fights.
+    const ew = rug(reach * 2, pathHalf * 2 - 0.6, nsBase + 0.09);
+    ew.position.x = cx;
+    ew.position.z = cz;
     this.scene.add(ew);
-    // medallion under the fountain
+
+    // medallion under the fountain, clearly above both rug arms
     const med = new THREE.Mesh(
-      new THREE.CylinderGeometry(3.4, 3.4, 0.05, 32),
+      new THREE.CylinderGeometry(3.4, 3.4, 0.04, 32),
       new THREE.MeshStandardMaterial({ color: 0x8a6c3a, roughness: 0.7 })
     );
-    med.position.set(cx, y + 0.02, cz);
+    med.position.set(cx, nsBase + 0.2, cz);
+    med.receiveShadow = true;
     this.scene.add(med);
   }
 
